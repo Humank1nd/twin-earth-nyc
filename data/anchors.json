@@ -28,7 +28,7 @@
     {"id": "ANC-015", "name": "44th St & Broadway — curb cut", "lat": 40.7575, "lon": -73.9856, "elev": 10.2, "tolerance_m": 0.3, "type": "curb-cut"},
     {"id": "ANC-016", "name": "45th St & 7th Ave — curb cut", "lat": 40.7582, "lon": -73.9866, "elev": 10.3, "tolerance_m": 0.3, "type": "curb-cut"},
     {"id": "ANC-017", "name": "Father Duffy statue — base center", "lat": 40.7593, "lon": -73.9852, "elev": 10.5, "tolerance_m": 0.3, "type": "monument"},
-    {"id": "ANC-018", "name": "Times Square ball drop pole — base", "lat": 40.7567, "lon": -73.9854, "elev": 10.2, "tolerance_m": 0.5, "type": "structure"},
+    {"id": "ANC-018", "name": "Times Square ball drop pole — base", "lat": 40.7567, "lon": -73.9854, "elev": 10.2, "tolerance_m": 0.3, "type": "structure"},
     {"id": "ANC-019", "name": "42nd / Broadway signal pole", "lat": 40.7564, "lon": -73.9860, "elev": 10.1, "tolerance_m": 0.5, "type": "signal"},
     {"id": "ANC-020", "name": "44th / 7th Ave signal pole", "lat": 40.7576, "lon": -73.9868, "elev": 10.2, "tolerance_m": 0.5, "type": "signal"},
     {"id": "ANC-021", "name": "46th / Broadway signal pole", "lat": 40.7591, "lon": -73.9848, "elev": 10.4, "tolerance_m": 0.5, "type": "signal"},

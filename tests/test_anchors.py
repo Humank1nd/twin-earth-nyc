@@ -123,11 +123,14 @@ class TestScaleAnchors:
 
 class TestMinimumSpacing:
     def test_no_overlapping_anchors(self, anchor_data):
+        """Anchors must be >0.5m apart in 3D (vertical stacking is allowed)."""
         anchors = anchor_data["anchors"]
         for i in range(len(anchors)):
             for j in range(i + 1, len(anchors)):
-                d = haversine_m(
+                horiz = haversine_m(
                     anchors[i]["lat"], anchors[i]["lon"],
                     anchors[j]["lat"], anchors[j]["lon"])
-                assert d > 0.5, \
-                    f'{anchors[i]["id"]} and {anchors[j]["id"]} only {d:.1f}m apart'
+                vert = abs(anchors[i]["elev"] - anchors[j]["elev"])
+                d3d = math.sqrt(horiz ** 2 + vert ** 2)
+                assert d3d > 0.5, \
+                    f'{anchors[i]["id"]} and {anchors[j]["id"]} only {d3d:.1f}m apart (3D)'

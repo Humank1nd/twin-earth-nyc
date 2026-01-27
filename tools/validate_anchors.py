@@ -124,21 +124,23 @@ def validate(data):
     else:
         add("tolerance_range", "warn", "; ".join(tol_issues))
 
-    # --- Minimum inter-anchor distance ---
+    # --- Minimum inter-anchor distance (3D: horizontal + vertical) ---
     min_dist = float("inf")
     min_pair = ("", "")
     for i in range(n):
         for j in range(i + 1, n):
-            d = haversine_m(anchors[i]["lat"], anchors[i]["lon"], anchors[j]["lat"], anchors[j]["lon"])
-            if d < min_dist:
-                min_dist = d
+            horiz = haversine_m(anchors[i]["lat"], anchors[i]["lon"], anchors[j]["lat"], anchors[j]["lon"])
+            vert = abs(anchors[i]["elev"] - anchors[j]["elev"])
+            d3d = math.sqrt(horiz ** 2 + vert ** 2)
+            if d3d < min_dist:
+                min_dist = d3d
                 min_pair = (anchors[i]["id"], anchors[j]["id"])
     if min_dist > 1.0:
-        add("min_spacing", "pass", f"Min distance {min_dist:.1f}m between {min_pair[0]} and {min_pair[1]}")
-    elif min_dist > 0.0:
-        add("min_spacing", "warn", f"Very close anchors: {min_dist:.1f}m between {min_pair[0]} and {min_pair[1]}")
+        add("min_spacing", "pass", f"Min 3D distance {min_dist:.1f}m between {min_pair[0]} and {min_pair[1]}")
+    elif min_dist > 0.5:
+        add("min_spacing", "warn", f"Very close anchors: {min_dist:.1f}m (3D) between {min_pair[0]} and {min_pair[1]}")
     else:
-        add("min_spacing", "fail", f"Overlapping anchors: {min_pair[0]} and {min_pair[1]}")
+        add("min_spacing", "fail", f"Overlapping anchors (3D): {min_dist:.1f}m between {min_pair[0]} and {min_pair[1]}")
 
     # --- Bounding box dimensions ---
     lats = [a["lat"] for a in anchors]
