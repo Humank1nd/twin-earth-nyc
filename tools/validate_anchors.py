@@ -72,10 +72,14 @@ def validate(data):
 
     # --- Count check ---
     n = len(anchors)
+    n_scale = len(scale_anchors)
     if n >= MIN_ANCHOR_COUNT:
-        add("anchor_count", "pass", f"{n} anchors (>= {MIN_ANCHOR_COUNT})")
+        add("geo_anchor_count", "pass", f"geo_anchors_count={n} (>= {MIN_ANCHOR_COUNT})")
     else:
-        add("anchor_count", "fail", f"{n} anchors (< {MIN_ANCHOR_COUNT})")
+        add("geo_anchor_count", "fail", f"geo_anchors_count={n} (< {MIN_ANCHOR_COUNT})")
+
+    add("scale_anchor_count", "pass" if n_scale > 0 else "warn",
+        f"scale_anchors_count={n_scale}, total_anchors_count={n + n_scale}")
 
     # --- Bounding box check ---
     bbox_violations = []
@@ -112,17 +116,20 @@ def validate(data):
         add("type_coverage", "fail", f"Missing types: {missing}")
 
     # --- Tolerance range check ---
-    tol_issues = []
+    tol_errors = []  # hard errors: <= 0
+    tol_warns = []   # soft warnings: > 5.0
     for a in anchors:
         t = a["tolerance_m"]
         if t <= 0:
-            tol_issues.append(f'{a["id"]}: tolerance {t} <= 0')
+            tol_errors.append(f'{a["id"]}: tolerance {t} <= 0')
         elif t > 5.0:
-            tol_issues.append(f'{a["id"]}: tolerance {t} > 5.0m (suspiciously large)')
-    if not tol_issues:
-        add("tolerance_range", "pass", "All tolerances in (0, 5.0]")
+            tol_warns.append(f'{a["id"]}: tolerance {t} > 5.0m (suspiciously large)')
+    if tol_errors:
+        add("tolerance_range", "fail", "; ".join(tol_errors))
+    elif tol_warns:
+        add("tolerance_range", "warn", "; ".join(tol_warns))
     else:
-        add("tolerance_range", "warn", "; ".join(tol_issues))
+        add("tolerance_range", "pass", "All tolerances in (0, 5.0]")
 
     # --- Minimum inter-anchor distance (3D: horizontal + vertical) ---
     min_dist = float("inf")

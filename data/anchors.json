@@ -8,7 +8,10 @@
       "lon": -73.9855,
       "elev": 10.0,
       "description": "Times Square center"
-    }
+    },
+    "geo_anchors_count": 25,
+    "scale_anchors_count": 10,
+    "total_anchors_count": 35
   },
   "anchors": [
     {

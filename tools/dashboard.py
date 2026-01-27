@@ -136,7 +136,9 @@ def main():
 
         print("  ANCHOR REGISTRY")
         print("  " + "-" * 62)
-        print(f"  Geo anchors: {len(anchors)}  |  Scale anchors: {len(scales)}")
+        print(f"  geo_anchors_count:   {len(anchors)}")
+        print(f"  scale_anchors_count: {len(scales)}")
+        print(f"  total_anchors_count: {len(anchors) + len(scales)}")
         print(f"  Lat range:   {min(lats):.4f} — {max(lats):.4f}")
         print(f"  Lon range:   {min(lons):.4f} — {max(lons):.4f}")
         print(f"  Tolerance:   {min(tols):.2f}m — {max(tols):.2f}m")

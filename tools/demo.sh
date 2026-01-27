@@ -3,6 +3,9 @@
 #
 # Shows: branch → change anchor → diff + invariant warning → promote → confirm
 #
+# Uses tools/anchor_io.py for all writes to ensure canonical formatting.
+# Validators are read-only — they never rewrite anchors.json.
+#
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -16,40 +19,36 @@ NC='\033[0m'
 
 step() { echo -e "\n${CYAN}=== STEP $1: $2 ===${NC}\n"; }
 
+# Clean up any leftover demo branch
+git branch -D demo/move-anchor-009 2>/dev/null || true
+
 # ─────────────────────────────────────────────────
 step 1 "Create feature branch"
-git checkout -b demo/move-anchor-009 2>/dev/null || git checkout demo/move-anchor-009
+git checkout -b demo/move-anchor-009
 echo "Branch: demo/move-anchor-009"
 
 # ─────────────────────────────────────────────────
 step 2 "Modify anchor ANC-009 (TKTS Red Steps top edge)"
 echo "Before:"
 python -c "
-import json
-d = json.load(open('data/anchors.json'))
-a = next(x for x in d['anchors'] if x['id'] == 'ANC-009')
+import sys; sys.path.insert(0, 'tools')
+from anchor_io import load
+a = next(x for x in load()['anchors'] if x['id'] == 'ANC-009')
 print(f'  ANC-009 lat={a[\"lat\"]} lon={a[\"lon\"]} elev={a[\"elev\"]} tol={a[\"tolerance_m\"]}m')
 "
 
-# Move the anchor 0.4m north (just over tolerance)
+# Move the anchor 0.4m north (just over 0.3m tolerance) using anchor_io
 python -c "
-import json
-with open('data/anchors.json', 'r') as f:
-    d = json.load(f)
-for a in d['anchors']:
-    if a['id'] == 'ANC-009':
-        a['lat'] = 40.7591 + 0.0000036  # ~0.4m north
-        a['elev'] = 14.8  # unchanged
-        break
-with open('data/anchors.json', 'w') as f:
-    json.dump(d, f, indent=2)
+import sys; sys.path.insert(0, 'tools')
+from anchor_io import modify_anchor
+modify_anchor('ANC-009', lat=40.7591 + 0.0000036)  # ~0.4m north
 "
 
 echo "After:"
 python -c "
-import json
-d = json.load(open('data/anchors.json'))
-a = next(x for x in d['anchors'] if x['id'] == 'ANC-009')
+import sys; sys.path.insert(0, 'tools')
+from anchor_io import load
+a = next(x for x in load()['anchors'] if x['id'] == 'ANC-009')
 print(f'  ANC-009 lat={a[\"lat\"]} lon={a[\"lon\"]} elev={a[\"elev\"]} tol={a[\"tolerance_m\"]}m')
 "
 
@@ -58,10 +57,10 @@ step 3 "Show diff + run invariant check"
 echo -e "${YELLOW}Git diff:${NC}"
 git diff --stat data/anchors.json
 echo ""
-git diff data/anchors.json | head -30
+git diff data/anchors.json
 echo ""
 
-echo -e "${YELLOW}Running anchor validation...${NC}"
+echo -e "${YELLOW}Running anchor validation (read-only)...${NC}"
 python tools/validate_anchors.py || true
 echo ""
 
@@ -71,52 +70,61 @@ echo -e "${RED}>>> This change would FAIL the nightly anchor regression.${NC}"
 
 # ─────────────────────────────────────────────────
 step 4 "Fix: move anchor within tolerance, then promote"
+# Correct to ~0.2m north (within 0.3m tolerance) using anchor_io
 python -c "
-import json
-with open('data/anchors.json', 'r') as f:
-    d = json.load(f)
-for a in d['anchors']:
-    if a['id'] == 'ANC-009':
-        a['lat'] = 40.7591 + 0.0000018  # ~0.2m north (within 0.3m tolerance)
-        break
-with open('data/anchors.json', 'w') as f:
-    json.dump(d, f, indent=2)
+import sys; sys.path.insert(0, 'tools')
+from anchor_io import modify_anchor
+modify_anchor('ANC-009', lat=40.7591 + 0.0000018)  # ~0.2m north
 "
 
 echo "Corrected to ~0.2m offset (within 0.3m tolerance)."
 echo ""
-echo -e "${YELLOW}Re-running anchor validation...${NC}"
+echo -e "${YELLOW}Git diff after correction:${NC}"
+git diff --stat data/anchors.json
+echo ""
+git diff data/anchors.json
+echo ""
+
+echo -e "${YELLOW}Re-running anchor validation (read-only)...${NC}"
 python tools/validate_anchors.py
 echo ""
 
-echo -e "${GREEN}Validation passed. Promoting change.${NC}"
+echo -e "${GREEN}Validation passed. Committing to feature branch.${NC}"
 git add data/anchors.json
-git commit -m "feat(anchors): adjust ANC-009 TKTS top edge +0.2m north
+git commit -m "$(cat <<'COMMITMSG'
+feat(anchors): adjust ANC-009 TKTS top edge +0.2m north
 
 Based on updated survey data. Within 0.3m structure tolerance.
+This commit is on a feature branch, NOT merged to main.
 
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>" 2>/dev/null || echo "(commit skipped — already committed or no changes)"
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+COMMITMSG
+)" 2>/dev/null || echo "(commit skipped — already committed or no changes)"
 
 # ─────────────────────────────────────────────────
-step 5 "Confirm baseline updated"
-echo "Current HEAD:"
+step 5 "Confirm baseline on feature branch (not main)"
+echo "Feature branch HEAD:"
 git log --oneline -1
 echo ""
 echo "Anchor ANC-009 state:"
 python -c "
-import json
-d = json.load(open('data/anchors.json'))
-a = next(x for x in d['anchors'] if x['id'] == 'ANC-009')
+import sys; sys.path.insert(0, 'tools')
+from anchor_io import load
+a = next(x for x in load()['anchors'] if x['id'] == 'ANC-009')
 print(f'  id:        {a[\"id\"]}')
 print(f'  name:      {a[\"name\"]}')
 print(f'  lat:       {a[\"lat\"]}')
 print(f'  lon:       {a[\"lon\"]}')
 print(f'  elev:      {a[\"elev\"]}m')
 print(f'  tolerance: {a[\"tolerance_m\"]}m')
-print(f'  status:    PROMOTED (within tolerance)')
+print(f'  status:    VALIDATED (on feature branch, not yet merged to main)')
 "
 echo ""
-echo -e "${GREEN}Demo complete. Baseline updated.${NC}"
+echo -e "${YELLOW}To promote to canonical truth:${NC}"
+echo "  git checkout main && git merge --no-ff demo/move-anchor-009"
+echo ""
+echo -e "${GREEN}Demo complete.${NC}"
 
-# Return to main
+# Return to main, delete demo branch
 git checkout main 2>/dev/null || git checkout master 2>/dev/null || true
+git branch -D demo/move-anchor-009 2>/dev/null || true
