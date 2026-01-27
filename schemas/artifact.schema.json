@@ -1,0 +1,476 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twin-earth-nyc.game/schemas/artifact.schema.json",
+  "title": "Twin Earth NYC IoT Artifact",
+  "description": "An IoT artifact is a connected infrastructure device embedded in the city fabric. Artifacts include traffic signals, crosswalk signals, CCTV cameras, interactive kiosks, and electronic door locks. They sense the environment, actuate physical changes, emit events to the event bus, accept commands from authority systems, and degrade over time. Artifacts are the primary evidence-generating infrastructure — they log what happens around them and provide the observation data that feeds the ledger.",
+  "type": "object",
+  "required": [
+    "artifact_id",
+    "artifact_class",
+    "state",
+    "position",
+    "region",
+    "interfaces",
+    "current_health"
+  ],
+  "properties": {
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^ART_[A-Z]+_[A-Z0-9]+_[a-f0-9]{4,}$",
+      "description": "Globally unique artifact identifier. Format: ART_{TYPE}_{REGION}_{hex-hash}. Example: ART_CCTV_MIDTOWN_b7c2, ART_SIGNAL_HARLEM_04af."
+    },
+    "artifact_class": {
+      "enum": [
+        "traffic_signal",
+        "crosswalk_signal",
+        "cctv",
+        "kiosk",
+        "door_lock"
+      ],
+      "description": "Functional class of the artifact. 'traffic_signal' = intersection signal controller. 'crosswalk_signal' = pedestrian crossing signal. 'cctv' = surveillance camera (fixed or PTZ). 'kiosk' = interactive public terminal (maps, info, advertising). 'door_lock' = electronic access control on a building entrance."
+    },
+    "artifact_subclass": {
+      "type": "string",
+      "description": "Optional finer classification within the class. Examples: 'ptz_camera' (pan-tilt-zoom CCTV), 'bollard_retractable' (access-control bollard), 'signal_smart' (adaptive traffic signal).",
+      "examples": ["ptz_camera", "fixed_camera", "smart_signal", "retractable_bollard", "info_kiosk", "advertising_kiosk"]
+    },
+    "state": {
+      "type": "object",
+      "required": ["operational_mode"],
+      "properties": {
+        "operational_mode": {
+          "enum": ["active", "standby", "maintenance", "disabled", "destroyed", "compromised"],
+          "description": "'active' = fully operational. 'standby' = powered but not actively sensing/actuating. 'maintenance' = temporarily offline for service. 'disabled' = powered off or disconnected. 'destroyed' = physically damaged beyond function. 'compromised' = hacked or tampered with, may produce false data."
+        },
+        "current_value": {
+          "type": "string",
+          "description": "Current output value specific to the artifact class. Traffic signal: 'red'/'yellow'/'green'. Door lock: 'locked'/'unlocked'. CCTV: 'recording'/'idle'. Kiosk: 'active_session'/'screensaver'.",
+          "examples": ["red", "yellow", "green", "locked", "unlocked", "recording", "idle", "walk", "dont_walk", "active_session"]
+        },
+        "last_state_change": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the operational mode or current value last changed."
+        },
+        "uptime_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Continuous uptime in seconds since last restart."
+        },
+        "error_flags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Active error/warning flags. Examples: ['low_power', 'sensor_degraded', 'network_timeout', 'tamper_detected', 'firmware_outdated']."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Current operational state of the artifact."
+    },
+    "position": {
+      "$ref": "#/$defs/vec3",
+      "description": "World-space position of the artifact."
+    },
+    "region": {
+      "type": "string",
+      "description": "Named region this artifact belongs to."
+    },
+    "block": {
+      "type": "string",
+      "description": "Block-level location within the region."
+    },
+    "mounting": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["pole", "wall", "ceiling", "ground", "freestanding", "embedded"],
+          "description": "How the artifact is physically mounted."
+        },
+        "height_m": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Height of the artifact above ground level in meters."
+        },
+        "orientation": {
+          "$ref": "#/$defs/quat",
+          "description": "Orientation of the artifact's forward-facing direction."
+        },
+        "host_entity_id": {
+          "type": "string",
+          "description": "Entity ID of the structure this artifact is mounted on (e.g., a building, a pole entity)."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Physical mounting details."
+    },
+    "sensors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sensor_id", "sensor_type", "active"],
+        "properties": {
+          "sensor_id": {
+            "type": "string",
+            "description": "Unique identifier for this sensor within the artifact."
+          },
+          "sensor_type": {
+            "enum": [
+              "camera_rgb",
+              "camera_ir",
+              "microphone",
+              "motion_detector",
+              "proximity",
+              "temperature",
+              "humidity",
+              "air_quality",
+              "electromagnetic",
+              "vibration",
+              "light_level",
+              "rfid_reader",
+              "biometric"
+            ],
+            "description": "Type of sensor."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Whether this sensor is currently active."
+          },
+          "range_m": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Effective sensing range in meters."
+          },
+          "fov_degrees": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 360,
+            "description": "Field of view in degrees. Omnidirectional sensors use 360."
+          },
+          "resolution": {
+            "type": "string",
+            "description": "Sensor resolution. For cameras: '1080p', '4K'. For audio: '16bit_44khz'. For others: descriptive."
+          },
+          "sample_rate_hz": {
+            "type": "number",
+            "minimum": 0,
+            "description": "How frequently the sensor samples, in Hz."
+          },
+          "noise_floor": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Baseline noise level. 0 = perfect signal, 1 = pure noise. Affects observation confidence."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Sensors installed on this artifact. Each sensor can independently generate observations."
+    },
+    "actuators": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["actuator_id", "actuator_type", "active"],
+        "properties": {
+          "actuator_id": {
+            "type": "string",
+            "description": "Unique identifier for this actuator within the artifact."
+          },
+          "actuator_type": {
+            "enum": [
+              "light_signal",
+              "led_display",
+              "speaker",
+              "motor",
+              "lock_mechanism",
+              "barrier",
+              "screen",
+              "alarm",
+              "relay"
+            ],
+            "description": "Type of actuator."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Whether this actuator is currently active."
+          },
+          "current_output": {
+            "type": "string",
+            "description": "Current output state. Examples: 'green_steady', 'red_flashing', 'locked', 'displaying_map', 'siren_on'."
+          },
+          "response_time_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Time in milliseconds from command receipt to actuator response."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Actuators installed on this artifact. Actuators change physical state in the world."
+    },
+    "interfaces": {
+      "type": "object",
+      "required": ["events_emitted", "commands_accepted"],
+      "properties": {
+        "events_emitted": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["event_topic", "description"],
+            "properties": {
+              "event_topic": {
+                "type": "string",
+                "description": "Event bus topic this artifact publishes to. Format: domain.type.action. Example: 'traffic.signal.state_change', 'security.camera.motion_detected'."
+              },
+              "description": {
+                "type": "string",
+                "description": "Human-readable description of when this event is emitted."
+              },
+              "frequency": {
+                "enum": ["on_change", "periodic", "on_demand", "continuous"],
+                "description": "How often this event fires."
+              },
+              "payload_schema_ref": {
+                "type": "string",
+                "description": "Reference to the payload schema for this event topic."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Events this artifact emits to the event bus."
+        },
+        "commands_accepted": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["command_name", "description"],
+            "properties": {
+              "command_name": {
+                "type": "string",
+                "description": "Command identifier. Example: 'set_signal_phase', 'unlock_door', 'pan_camera', 'display_message'."
+              },
+              "description": {
+                "type": "string",
+                "description": "What this command does."
+              },
+              "required_authority": {
+                "enum": ["none", "user", "operator", "admin", "emergency", "federal"],
+                "description": "Minimum authority level required to issue this command."
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Parameter schema for this command."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Commands this artifact accepts from the control plane."
+        },
+        "network_protocol": {
+          "enum": ["mqtt", "http_rest", "coap", "proprietary", "mesh_radio"],
+          "description": "Network protocol used for artifact communication."
+        },
+        "network_address": {
+          "type": "string",
+          "description": "Network address or identifier for remote communication."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Communication interfaces — what events the artifact emits and what commands it accepts."
+    },
+    "constraints": {
+      "type": "object",
+      "properties": {
+        "uptime_target": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Target uptime as a fraction. 0.999 = 99.9% uptime target."
+        },
+        "latency_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum acceptable command-to-response latency in milliseconds."
+        },
+        "bandwidth_kbps": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Network bandwidth capacity in kilobits per second."
+        },
+        "range_m": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Maximum effective operational range in meters (for wireless artifacts)."
+        },
+        "power": {
+          "type": "object",
+          "properties": {
+            "source": {
+              "enum": ["mains", "battery", "solar", "poe", "inductive", "unknown"],
+              "description": "Power source type."
+            },
+            "consumption_watts": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Power consumption in watts during active operation."
+            },
+            "battery_level": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Current battery level (if battery-powered). 0 = depleted, 1 = full."
+            },
+            "backup_hours": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Hours of backup power available if mains is lost."
+            }
+          },
+          "additionalProperties": false
+        },
+        "maintenance_status": {
+          "type": "object",
+          "properties": {
+            "last_maintenance": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp of last maintenance visit."
+            },
+            "next_scheduled": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp of next scheduled maintenance."
+            },
+            "maintenance_overdue": {
+              "type": "boolean",
+              "description": "Whether maintenance is overdue."
+            }
+          },
+          "additionalProperties": false
+        },
+        "security_posture": {
+          "type": "object",
+          "properties": {
+            "encryption": {
+              "enum": ["none", "basic", "standard", "military_grade"],
+              "description": "Level of communication encryption."
+            },
+            "authentication": {
+              "enum": ["none", "password", "certificate", "multi_factor", "biometric"],
+              "description": "Authentication method for command access."
+            },
+            "tamper_detection": {
+              "type": "boolean",
+              "description": "Whether the artifact can detect physical tampering."
+            },
+            "vulnerability_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "How vulnerable the artifact is to hacking or exploitation. 0 = impenetrable, 1 = trivially compromised."
+            },
+            "last_security_audit": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "description": "Operational constraints and requirements."
+    },
+    "failure_modes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["mode", "probability", "consequence"],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "description": "Name of the failure mode. Examples: 'power_loss', 'sensor_blind', 'network_disconnect', 'physical_damage', 'firmware_crash', 'tamper_compromise'."
+          },
+          "probability": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Probability of this failure mode occurring per hour of operation under normal conditions."
+          },
+          "consequence": {
+            "type": "string",
+            "description": "What happens when this failure occurs. Examples: 'stops_recording', 'defaults_to_red', 'unlocks_all_doors', 'emits_false_data'."
+          },
+          "detection_time_s": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Average time in seconds before the failure is detected by monitoring systems."
+          },
+          "recovery_action": {
+            "type": "string",
+            "description": "How to recover from this failure. Examples: 'auto_restart', 'manual_reset', 'replacement_required', 'firmware_reflash'."
+          },
+          "cascading": {
+            "type": "boolean",
+            "description": "Whether this failure can cascade to connected artifacts."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Catalogue of possible failure modes with probabilities and consequences."
+    },
+    "current_health": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Overall health score. 1.0 = perfect condition. 0.0 = non-functional. Computed from sensor health, actuator health, power status, and maintenance state. Below 0.3, the artifact enters degraded operation. At 0.0, it is destroyed or disabled."
+    },
+    "last_maintenance": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of the most recent maintenance action on this artifact."
+    },
+    "installation_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this artifact was installed."
+    },
+    "owner_entity_id": {
+      "type": "string",
+      "description": "Entity ID of the organization or authority that owns/operates this artifact. Example: NYC DOT, NYPD, building management company."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "description": "Freeform tags. Examples: ['critical_infrastructure', 'player_hackable', 'quest_related', 'portal_adjacent']."
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vec3": {
+      "type": "object",
+      "title": "Vector3",
+      "description": "3D vector in meters.",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "quat": {
+      "type": "object",
+      "title": "Quaternion",
+      "description": "Unit quaternion for rotation.",
+      "required": ["x", "y", "z", "w"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" },
+        "w": { "type": "number" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

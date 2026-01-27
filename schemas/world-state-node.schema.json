@@ -1,0 +1,317 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twin-earth-nyc.game/schemas/world-state-node.schema.json",
+  "title": "Twin Earth NYC World State Graph Node",
+  "description": "A world state node is a vertex in the world state graph — a directed acyclic graph (DAG) that tracks how the simulation world evolves over time. Each node represents a snapshot of world conditions over a time span and at a specific spatial scope (city, district, block, zone). Nodes reference parent nodes, carry delta information (what changed from the parent), and record the reason for branching. The world state graph enables temporal queries ('what was the weather at 3pm?'), branching narratives, replay, and undo/redo of simulation state. Committed nodes are immutable; uncommitted nodes can be pruned during rollback.",
+  "type": "object",
+  "required": [
+    "node_id",
+    "time_span",
+    "scope",
+    "reason",
+    "delta_from_parent",
+    "committed"
+  ],
+  "properties": {
+    "node_id": {
+      "type": "string",
+      "pattern": "^WSN_[a-f0-9]{8,}$",
+      "description": "Globally unique world state node identifier. Format: WSN_{hex-hash}. Example: WSN_4a7c9e01."
+    },
+    "time_span": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 timestamp marking the beginning of this node's validity window."
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 timestamp marking the end of this node's validity window. For the current (live) node, this is null or set to a far-future sentinel."
+        }
+      },
+      "additionalProperties": false,
+      "description": "The time range during which this world state node was/is the active state. Non-overlapping within the same scope and branch."
+    },
+    "scope": {
+      "enum": ["city", "district", "block", "zone"],
+      "description": "Spatial granularity of this node. 'city' = entire playable area. 'district' = named neighborhood (e.g., Midtown, Harlem). 'block' = single street block. 'zone' = sub-block zone (e.g., a specific building interior, park section)."
+    },
+    "scope_id": {
+      "type": "string",
+      "description": "Identifier of the spatial scope. For 'city': 'nyc'. For 'district': region name. For 'block': block identifier. For 'zone': zone identifier.",
+      "examples": ["nyc", "midtown", "harlem", "W42_7AV_8AV", "central_park_north"]
+    },
+    "parent_nodes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^WSN_[a-f0-9]{8,}$"
+      },
+      "description": "Node IDs of parent world state nodes. Typically one parent (linear progression). Multiple parents occur when merging branches (e.g., reconciling two parallel narrative paths). Empty for the root node."
+    },
+    "child_nodes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^WSN_[a-f0-9]{8,}$"
+      },
+      "description": "Node IDs of child world state nodes. Multiple children indicate branching (e.g., a narrative choice point, a simulation fork for proposal evaluation)."
+    },
+    "branch_id": {
+      "type": "string",
+      "description": "Identifier of the narrative/simulation branch this node belongs to. The 'main' branch is the canonical timeline. Other branches are speculative, what-if, or proposal-evaluation timelines.",
+      "examples": ["main", "proposal_sim_001", "what_if_portal_sealed", "narrative_branch_a"]
+    },
+    "reason": {
+      "enum": ["natural", "seasonal", "episodic", "anomaly", "branch"],
+      "description": "Why this node was created. 'natural' = normal time progression. 'seasonal' = time-of-day or weather cycle change. 'episodic' = narrative event or mission phase transition. 'anomaly' = portal activity or dimensional event. 'branch' = speculative fork for proposal simulation or narrative branching."
+    },
+    "reason_detail": {
+      "type": "string",
+      "description": "Freeform explanation of the reason. Example: 'Sunset transition at 18:42', 'Portal PRT_HARLEM_c0de opened, triggering ecological state change', 'Player chose to warn the police (narrative branch A)'."
+    },
+    "trigger_event_id": {
+      "type": "string",
+      "pattern": "^EVT_[a-f0-9]{8,}$",
+      "description": "Ledger event that triggered this state node's creation. Null for natural/seasonal transitions."
+    },
+    "delta_from_parent": {
+      "type": "object",
+      "description": "What changed from the parent node to this node. Only differences are stored — unchanged fields are inherited from the parent. This is the core of the incremental state representation.",
+      "properties": {
+        "weather": {
+          "type": "object",
+          "properties": {
+            "condition": {
+              "enum": ["clear", "cloudy", "rain", "heavy_rain", "fog", "snow", "storm", "anomalous"],
+              "description": "Weather condition."
+            },
+            "temperature_c": {
+              "type": "number",
+              "description": "Temperature in Celsius."
+            },
+            "wind_speed_ms": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Wind speed in m/s."
+            },
+            "wind_direction": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 360,
+              "description": "Wind direction in degrees."
+            },
+            "precipitation_mm_hr": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Precipitation rate in mm/hr."
+            },
+            "visibility_m": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Horizontal visibility in meters."
+            },
+            "anomalous_effects": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Portal-induced weather anomalies. Examples: ['localized_reverse_rain', 'aurora_at_street_level', 'temperature_inversion_zone']."
+            }
+          },
+          "additionalProperties": false
+        },
+        "lighting": {
+          "type": "object",
+          "properties": {
+            "time_of_day": {
+              "enum": ["dawn", "morning", "noon", "afternoon", "golden_hour", "dusk", "twilight", "night"],
+              "description": "Current time-of-day phase."
+            },
+            "sun_elevation": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "description": "Sun elevation angle in degrees. Negative = below horizon."
+            },
+            "sun_azimuth": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 360,
+              "description": "Sun azimuth in degrees."
+            },
+            "cloud_cover": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Fraction of sky covered by clouds. Affects shadow softness and ambient light."
+            },
+            "artificial_light_level": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Level of artificial lighting in the area. 0 = no street lights. 1 = fully illuminated."
+            },
+            "anomalous_light_sources": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "source_entity_id": { "type": "string" },
+                  "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+                  "intensity": { "type": "number", "minimum": 0 },
+                  "radius_m": { "type": "number", "minimum": 0 }
+                },
+                "additionalProperties": false
+              },
+              "description": "Non-standard light sources (portal glow, anomalous emissions)."
+            }
+          },
+          "additionalProperties": false
+        },
+        "crowd_density_mult": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Multiplier on base crowd density for this scope. 1.0 = normal. 0.5 = half the usual crowd. 2.0 = double (e.g., event, protest). 0.0 = deserted (lockdown, evacuation)."
+        },
+        "crowd_mood": {
+          "enum": ["calm", "busy", "festive", "tense", "panicked", "hostile", "evacuating"],
+          "description": "Dominant mood of the crowd in this area."
+        },
+        "device_states": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["artifact_id", "new_state"],
+            "properties": {
+              "artifact_id": {
+                "type": "string",
+                "description": "Artifact whose state changed."
+              },
+              "new_state": {
+                "type": "string",
+                "description": "New operational state or value. Example: 'disabled', 'red', 'locked'."
+              },
+              "previous_state": {
+                "type": "string",
+                "description": "Previous state for diff tracking."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "IoT artifact state changes from the parent node."
+        },
+        "damage_states": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["entity_id", "damage_level"],
+            "properties": {
+              "entity_id": {
+                "type": "string",
+                "description": "Entity that sustained damage."
+              },
+              "damage_level": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Current damage level. 0 = pristine. 1 = destroyed."
+              },
+              "damage_type": {
+                "enum": ["impact", "fire", "water", "explosion", "dimensional", "decay", "vandalism"],
+                "description": "Type of damage sustained."
+              },
+              "visual_effect": {
+                "type": "string",
+                "description": "Visual effect to apply. Examples: 'cracked_glass', 'scorch_marks', 'collapsed_wall', 'dimensional_warping'."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Damage state changes to entities from the parent node."
+        },
+        "heat_state": {
+          "type": "object",
+          "properties": {
+            "physical": { "type": "number", "minimum": 0, "maximum": 1 },
+            "social": { "type": "number", "minimum": 0, "maximum": 1 },
+            "institutional": { "type": "number", "minimum": 0, "maximum": 1 },
+            "ecological": { "type": "number", "minimum": 0, "maximum": 1 },
+            "aggregate": { "type": "number", "minimum": 0, "maximum": 1 },
+            "level": { "enum": ["normal", "elevated", "high", "critical", "crisis"] }
+          },
+          "additionalProperties": false,
+          "description": "Heat state snapshot at this node. Null fields inherit from parent."
+        },
+        "entity_additions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Entity IDs of new entities spawned in this state transition."
+        },
+        "entity_removals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Entity IDs of entities removed (despawned, destroyed) in this state transition."
+        },
+        "narrative_flags": {
+          "type": "object",
+          "additionalProperties": { "type": "boolean" },
+          "description": "Narrative/quest flags set or cleared in this transition. Key = flag name, value = true (set) or false (cleared)."
+        },
+        "custom_properties": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Extensible bag for system-specific state changes not covered by the standard fields."
+        }
+      },
+      "additionalProperties": false
+    },
+    "committed": {
+      "type": "boolean",
+      "description": "Whether this node is committed to the canonical world state. Committed nodes are immutable and part of the official timeline. Uncommitted nodes are speculative and may be pruned."
+    },
+    "replayable": {
+      "type": "boolean",
+      "description": "Whether this node contains enough information to replay the state transition deterministically. Replayable nodes store full delta and random seeds. Non-replayable nodes store only summary state."
+    },
+    "snapshot_ref": {
+      "type": "string",
+      "format": "uri",
+      "description": "URI reference to a full world state snapshot file, if one exists for this node. Snapshots are taken periodically (every N nodes) to enable fast state reconstruction without replaying the entire chain. Example: 'snapshot://world-states/WSN_4a7c9e01.bin'."
+    },
+    "random_seed": {
+      "type": "integer",
+      "description": "Random seed used for procedural generation during this state transition. Required for deterministic replay."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "System timestamp when this node was created."
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "node_size_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Serialized size of this node's delta in bytes."
+        },
+        "entities_affected_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of entities whose state changed in this transition."
+        },
+        "computation_time_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Time in milliseconds to compute this state transition."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Diagnostic metadata about this node."
+    }
+  },
+  "additionalProperties": false
+}

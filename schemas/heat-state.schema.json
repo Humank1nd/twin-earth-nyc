@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twin-earth-nyc.game/schemas/heat-state.schema.json",
+  "title": "Twin Earth NYC Heat State",
+  "description": "The heat state captures the current threat/attention level for a region across four orthogonal channels: physical (damage, noise, visible disruption), social (witness awareness, crowd behavior, social media), institutional (police attention, federal interest, legal proceedings), and ecological (portal activity, dimensional bleed, reality destabilization). Heat drives the emergent difficulty curve — high heat triggers escalating authority responses, NPC behavioral changes, and narrative consequences. Each channel decays independently and aggregates into an overall threat level.",
+  "type": "object",
+  "required": [
+    "region_id",
+    "timestamp",
+    "channels",
+    "aggregate",
+    "level",
+    "decay_rates"
+  ],
+  "properties": {
+    "region_id": {
+      "type": "string",
+      "description": "Region this heat state applies to. Matches region names used in entity placement. Example: 'midtown', 'harlem', 'financial_district'."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of this heat state snapshot. Heat is sampled and persisted at regular intervals and on significant events."
+    },
+    "channels": {
+      "type": "object",
+      "required": ["physical", "social", "institutional", "ecological"],
+      "properties": {
+        "physical": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Physical heat channel. Measures visible, tangible disruption: broken windows, damaged vehicles, fires, explosions, loud noises, blood. Rises from damage events and physical evidence. Decays as damage is repaired or cleaned up. High physical heat makes the area look like a warzone — NPCs flee, emergency services respond."
+        },
+        "social": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Social heat channel. Measures human awareness and social amplification: witnesses talking, crowd panic, cellphone recordings, social media posts, news coverage. Rises from witnessed events and NPC communication. Decays as attention fades and news cycles move on. High social heat means everyone knows something happened — NPCs are vigilant, crowds gather or avoid the area."
+        },
+        "institutional": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Institutional heat channel. Measures authority attention: police incident reports, detective investigations, federal agency interest, warrant issuance, surveillance deployment. Rises from reported crimes, evidence accumulation, and pattern recognition by AI policing. Decays very slowly — institutional memory is long. High institutional heat means active manhunts, checkpoints, and restricted zones."
+        },
+        "ecological": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Ecological heat channel. Measures dimensional/environmental disruption: portal activity, entropy bleed, physics anomalies, material transmutations, flora/fauna mutations. Rises from portal openings, dimensional transits, and anomaly events. Decays slowly as portals close and entropy dissipates. High ecological heat means reality itself is unstable — unpredictable physics, visual distortions, NPC cognitive effects."
+        }
+      },
+      "additionalProperties": false,
+      "description": "The four orthogonal heat channels. Each tracks a different dimension of disruption."
+    },
+    "aggregate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Weighted average of all four channels. The weighting formula is configurable per region but defaults to equal weights (0.25 each). This single number drives the overall threat level classification."
+    },
+    "channel_weights": {
+      "type": "object",
+      "properties": {
+        "physical": { "type": "number", "minimum": 0, "maximum": 1 },
+        "social": { "type": "number", "minimum": 0, "maximum": 1 },
+        "institutional": { "type": "number", "minimum": 0, "maximum": 1 },
+        "ecological": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false,
+      "description": "Weights used to compute the aggregate from channels. Must sum to 1.0. Different regions may weight channels differently (e.g., Times Square weights social higher; a federal facility weights institutional higher)."
+    },
+    "level": {
+      "enum": ["normal", "elevated", "high", "critical", "crisis"],
+      "description": "Discretized threat level derived from the aggregate. 'normal' = aggregate < 0.2, business as usual. 'elevated' = 0.2-0.4, increased patrols. 'high' = 0.4-0.6, active investigation, area awareness. 'critical' = 0.6-0.8, lockdowns, tactical response. 'crisis' = 0.8-1.0, martial law, federal intervention, evacuation."
+    },
+    "level_thresholds": {
+      "type": "object",
+      "properties": {
+        "elevated": { "type": "number", "minimum": 0, "maximum": 1, "description": "Aggregate threshold for 'elevated'. Default: 0.2." },
+        "high": { "type": "number", "minimum": 0, "maximum": 1, "description": "Aggregate threshold for 'high'. Default: 0.4." },
+        "critical": { "type": "number", "minimum": 0, "maximum": 1, "description": "Aggregate threshold for 'critical'. Default: 0.6." },
+        "crisis": { "type": "number", "minimum": 0, "maximum": 1, "description": "Aggregate threshold for 'crisis'. Default: 0.8." }
+      },
+      "additionalProperties": false,
+      "description": "Configurable thresholds for level transitions. Different regions may have different sensitivities."
+    },
+    "active_responses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["response_type", "triggered_at", "status"],
+        "properties": {
+          "response_type": {
+            "enum": [
+              "increased_patrol",
+              "detective_assigned",
+              "surveillance_deployed",
+              "checkpoint_established",
+              "tactical_unit_dispatched",
+              "area_lockdown",
+              "federal_notification",
+              "federal_response_team",
+              "evacuation_order",
+              "media_blackout",
+              "portal_containment_team",
+              "national_guard_activation"
+            ],
+            "description": "Type of authority response currently active in this region."
+          },
+          "triggered_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this response was activated."
+          },
+          "triggered_by_event": {
+            "type": "string",
+            "description": "Event ID of the ledger event that triggered this response."
+          },
+          "status": {
+            "enum": ["deploying", "active", "winding_down", "completed"],
+            "description": "Current status of the response."
+          },
+          "duration_estimate_s": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Estimated remaining duration in seconds."
+          },
+          "entities_assigned": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Entity IDs of NPCs/vehicles assigned to this response."
+          },
+          "heat_threshold_to_cancel": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Aggregate heat level below which this response will be cancelled/wound down."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Currently active authority responses in this region. Responses are triggered by heat level transitions and persist until heat drops below cancellation thresholds."
+    },
+    "decay_rates": {
+      "type": "object",
+      "required": ["physical", "social", "institutional", "ecological"],
+      "properties": {
+        "physical": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Physical heat decay per minute. Default: 0.01 (slow — physical evidence persists). Modified by cleanup crews, rain, time."
+        },
+        "social": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Social heat decay per minute. Default: 0.02 (moderate — people forget, news moves on). Modified by media coverage, social media virality."
+        },
+        "institutional": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Institutional heat decay per minute. Default: 0.005 (very slow — bureaucracies have long memories). Modified by case closure, evidence destruction."
+        },
+        "ecological": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Ecological heat decay per minute. Default: 0.008 (slow — dimensional damage heals slowly). Modified by portal sealing, containment efforts."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Decay rates per channel, expressed as heat points lost per minute. Rates are configurable per region and can be modified by active events, weather, and time of day."
+    },
+    "decay_modifiers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["channel", "modifier", "reason"],
+        "properties": {
+          "channel": {
+            "enum": ["physical", "social", "institutional", "ecological", "all"]
+          },
+          "modifier": {
+            "type": "number",
+            "description": "Multiplicative modifier to the decay rate. >1 = faster decay, <1 = slower decay, 0 = no decay."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this modifier is active. Example: 'heavy_rain_washing_evidence', 'media_frenzy_sustaining_attention', 'federal_investigation_open'."
+          },
+          "expiry": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this modifier expires. Null = permanent until explicitly removed."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Active modifiers to decay rates from environmental conditions, active investigations, or narrative events."
+    },
+    "last_source_event": {
+      "type": "string",
+      "pattern": "^EVT_[a-f0-9]{8,}$",
+      "description": "Event ID of the most recent ledger event that contributed to heat in this region."
+    },
+    "heat_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "aggregate", "source_event"],
+        "properties": {
+          "timestamp": { "type": "string", "format": "date-time" },
+          "aggregate": { "type": "number", "minimum": 0, "maximum": 1 },
+          "physical": { "type": "number", "minimum": 0, "maximum": 1 },
+          "social": { "type": "number", "minimum": 0, "maximum": 1 },
+          "institutional": { "type": "number", "minimum": 0, "maximum": 1 },
+          "ecological": { "type": "number", "minimum": 0, "maximum": 1 },
+          "source_event": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "description": "Recent heat history samples for trend analysis and visualization. Kept as a rolling window."
+    },
+    "peak_aggregate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Highest aggregate heat level ever recorded in this region. Used for narrative milestones and achievement tracking."
+    },
+    "peak_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the peak aggregate was recorded."
+    }
+  },
+  "additionalProperties": false
+}

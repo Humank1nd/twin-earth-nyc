@@ -1,0 +1,460 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twin-earth-nyc.game/schemas/npc.schema.json",
+  "title": "Twin Earth NYC NPC",
+  "description": "An NPC (Non-Player Character) is a simulated person in the Twin Earth NYC world. NPCs range from background pedestrians (tier: background, heuristic behavior, minimal state) to fully realized hero NPCs (tier: hero, learned behavior, rich sensory and memory state). NPCs sense their environment, form goals, remember events, accumulate stress, follow schedules, and respond to heat levels, anomalies, and player actions. The NPC schema captures everything needed to simulate, persist, and reason about a character.",
+  "type": "object",
+  "required": [
+    "npc_id",
+    "npc_type",
+    "tier",
+    "behavior_model",
+    "position",
+    "current_goal",
+    "stress_level"
+  ],
+  "properties": {
+    "npc_id": {
+      "type": "string",
+      "pattern": "^NPC_[A-Z]+_[A-Z0-9]+_[a-f0-9]{4,}$",
+      "description": "Globally unique NPC identifier. Format: NPC_{TYPE}_{REGION}_{hex-hash}. Example: NPC_PED_MIDTOWN_a1b2, NPC_COP_HARLEM_f3e4."
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Human-readable name. Background NPCs may have generic names ('Pedestrian #4127'). Hero NPCs have unique names ('Officer Maria Santos')."
+    },
+    "npc_type": {
+      "enum": ["pedestrian", "driver", "cop", "security", "vendor", "ems"],
+      "description": "'pedestrian' = walking civilian. 'driver' = operating a vehicle. 'cop' = NYPD officer. 'security' = private security guard. 'vendor' = street vendor or shop worker. 'ems' = emergency medical services."
+    },
+    "tier": {
+      "enum": ["background", "hero"],
+      "description": "'background' = low-fidelity NPC. Heuristic behavior, minimal memory, no unique dialogue. Part of the crowd simulation. 'hero' = high-fidelity NPC. Rich sensory model, persistent memory, unique personality, can be a quest giver, witness, or antagonist."
+    },
+    "behavior_model": {
+      "enum": ["heuristic", "learned"],
+      "description": "'heuristic' = rule-based behavior (state machines, behavior trees). Fast, predictable, used for background NPCs and simple interactions. 'learned' = ML-driven behavior (trained policies, LLM-backed dialogue). Expensive, nuanced, used for hero NPCs."
+    },
+    "position": {
+      "$ref": "#/$defs/vec3",
+      "description": "Current world-space position."
+    },
+    "velocity": {
+      "$ref": "#/$defs/vec3",
+      "description": "Current velocity vector in m/s."
+    },
+    "heading": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 360,
+      "description": "Current facing direction in degrees. 0 = north, 90 = east, 180 = south, 270 = west."
+    },
+    "region": {
+      "type": "string",
+      "description": "Current region the NPC is in."
+    },
+    "current_goal": {
+      "type": "object",
+      "required": ["goal_type"],
+      "properties": {
+        "goal_type": {
+          "enum": [
+            "idle",
+            "travel_to",
+            "patrol",
+            "observe",
+            "interact",
+            "flee",
+            "pursue",
+            "investigate",
+            "work",
+            "shop",
+            "perform",
+            "assist",
+            "arrest",
+            "respond_emergency"
+          ],
+          "description": "Current high-level goal."
+        },
+        "target_position": {
+          "$ref": "#/$defs/vec3",
+          "description": "Destination position for travel/patrol goals."
+        },
+        "target_entity_id": {
+          "type": "string",
+          "description": "Entity ID of the target for interact/pursue/observe/arrest goals."
+        },
+        "priority": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Goal priority. Higher priority goals preempt lower ones."
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "timeout_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this goal expires if not completed."
+        },
+        "completion_radius_m": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Distance in meters at which the goal is considered reached (for travel goals)."
+        }
+      },
+      "additionalProperties": false,
+      "description": "The NPC's current active goal."
+    },
+    "goal_queue": {
+      "type": "array",
+      "items": {
+        "$ref": "#/properties/current_goal"
+      },
+      "description": "Queued goals to be pursued after the current goal completes or is abandoned."
+    },
+    "sensor_state": {
+      "type": "object",
+      "description": "Sensory perception state. Background NPCs have simplified sensors. Hero NPCs have full perceptual models.",
+      "properties": {
+        "camera_fov": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 360,
+          "description": "Visual field of view in degrees. Human default ~120 for peripheral, ~60 for focused attention. Hero NPCs only."
+        },
+        "visual_range_m": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Maximum visual detection range in meters. Affected by lighting, weather, and obstructions."
+        },
+        "depth_probes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of depth-sensing raycasts per tick for obstacle detection and spatial awareness. Hero NPCs: 8-32. Background: 2-4."
+        },
+        "audio_level": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Current ambient audio awareness level. 0 = deaf (headphones, loud environment). 1 = perfect hearing in silence. Affects detection of nearby events."
+        },
+        "audio_range_m": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Maximum auditory detection range in meters."
+        },
+        "anomaly_sensitivity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "How sensitive this NPC is to dimensional anomalies. Most civilians: 0.1-0.3. Trained agents: 0.7+."
+        },
+        "currently_perceiving": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "entity_id": { "type": "string" },
+              "modality": { "enum": ["visual", "audio", "other"] },
+              "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+              "threat_assessment": { "enum": ["none", "low", "medium", "high", "critical"] }
+            },
+            "additionalProperties": false
+          },
+          "description": "Entities currently in the NPC's perceptual field. Updated each tick."
+        }
+      },
+      "additionalProperties": false
+    },
+    "memory": {
+      "type": "object",
+      "description": "NPC memory system. Background NPCs have minimal memory. Hero NPCs maintain rich short-term and long-term memory.",
+      "properties": {
+        "short_term": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["event_summary", "timestamp", "salience"],
+            "properties": {
+              "event_summary": {
+                "type": "string",
+                "description": "Brief description of what the NPC remembers. Example: 'Saw suspicious person near alley entrance'."
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "entity_ids": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Entity IDs involved in this memory."
+              },
+              "location": {
+                "$ref": "#/$defs/vec3"
+              },
+              "emotional_valence": {
+                "type": "number",
+                "minimum": -1,
+                "maximum": 1,
+                "description": "Emotional coloring of the memory. -1 = strongly negative/frightening. 0 = neutral. +1 = strongly positive."
+              },
+              "salience": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "How important/memorable this event is. Low-salience memories decay first."
+              },
+              "decay_rate": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Rate at which this memory fades per minute. High-salience memories decay slowly."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Recent memories. Decays over minutes to hours. Capacity: ~10 items for background, ~50 for hero."
+        },
+        "long_term_habits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["habit", "strength"],
+            "properties": {
+              "habit": {
+                "type": "string",
+                "description": "Description of a behavioral habit. Example: 'Takes subway at 42nd St every weekday at 8:15 AM'."
+              },
+              "strength": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "How ingrained the habit is. 1.0 = never deviates. 0.1 = barely a tendency."
+              },
+              "time_pattern": {
+                "type": "string",
+                "description": "Cron-like pattern or description of when this habit activates. Example: 'weekdays 08:00-08:30'."
+              },
+              "location_pattern": {
+                "type": "string",
+                "description": "Where this habit takes place. Example: 'Times Square subway entrance'."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Long-term behavioral habits. Persist across sessions for hero NPCs. Inform schedule and route choices."
+        },
+        "avoid_zones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["center", "radius_m", "reason"],
+            "properties": {
+              "center": {
+                "$ref": "#/$defs/vec3"
+              },
+              "radius_m": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Radius of the avoidance zone in meters."
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why this zone is avoided. Example: 'witnessed_explosion', 'portal_sighting', 'mugging_location'."
+              },
+              "strength": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "How strongly the NPC avoids this zone. 1.0 = absolute avoidance. 0.1 = mild preference to avoid."
+              },
+              "expiry": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When this avoidance expires. Null = permanent."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Zones the NPC actively avoids due to past negative experiences."
+        },
+        "known_entities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "entity_id": { "type": "string" },
+              "relationship": { "enum": ["unknown", "acquaintance", "friend", "enemy", "authority", "suspect", "neutral"] },
+              "trust_level": { "type": "number", "minimum": 0, "maximum": 1 },
+              "last_interaction": { "type": "string", "format": "date-time" }
+            },
+            "additionalProperties": false
+          },
+          "description": "Entities this NPC has knowledge of and their relationship status. Hero NPCs only."
+        }
+      },
+      "additionalProperties": false
+    },
+    "stress_level": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Current stress level. 0 = completely calm. 1 = maximum stress (panic/fight-or-flight). Stress increases from perceived threats, anomalies, high heat, and negative memories. Stress decays over time in safe environments. High stress alters behavior: increased alertness, erratic movement, fleeing, or aggression depending on NPC type."
+    },
+    "emotional_state": {
+      "type": "object",
+      "properties": {
+        "primary_emotion": {
+          "enum": ["neutral", "happy", "angry", "afraid", "sad", "curious", "disgusted", "surprised", "suspicious"],
+          "description": "Dominant current emotion."
+        },
+        "intensity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Intensity of the primary emotion."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Current emotional state. Affects dialogue, behavior, and facial animation for hero NPCs."
+    },
+    "faction_affiliation": {
+      "type": "string",
+      "description": "Faction this NPC belongs to. Examples: 'nypd', 'fdny', 'civilian', 'portal_cult', 'federal_agent', 'street_gang', 'corporate_security', 'unaffiliated'.",
+      "examples": ["nypd", "fdny", "civilian", "portal_cult", "federal_agent", "street_gang", "corporate_security", "unaffiliated"]
+    },
+    "faction_reputation": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number",
+        "minimum": -1,
+        "maximum": 1
+      },
+      "description": "Map of faction_name -> reputation score. -1 = hostile, 0 = neutral, +1 = allied. Hero NPCs only."
+    },
+    "schedule_preset": {
+      "enum": [
+        "commuter",
+        "tourist",
+        "shopper",
+        "performer_audience",
+        "vendor_worker"
+      ],
+      "description": "Behavioral schedule archetype. 'commuter' = morning rush / evening rush pattern with office hours. 'tourist' = wandering sightseeing pattern. 'shopper' = retail district visits. 'performer_audience' = gathering near street performers or events. 'vendor_worker' = stationed at a fixed location during work hours."
+    },
+    "schedule_overrides": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "time_range": {
+            "type": "object",
+            "properties": {
+              "start": { "type": "string", "description": "Time of day (HH:MM)." },
+              "end": { "type": "string", "description": "Time of day (HH:MM)." }
+            }
+          },
+          "activity": { "type": "string" },
+          "location": { "$ref": "#/$defs/vec3" }
+        },
+        "additionalProperties": false
+      },
+      "description": "Custom schedule entries that override the preset for specific time ranges."
+    },
+    "persistence": {
+      "enum": ["session", "cross_session"],
+      "description": "'session' = NPC state resets between game sessions. Used for background NPCs. 'cross_session' = NPC state persists across sessions. Used for hero NPCs."
+    },
+    "appearance": {
+      "type": "object",
+      "properties": {
+        "model_ref": {
+          "type": "string",
+          "description": "Asset reference for the NPC's 3D model."
+        },
+        "clothing_tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tags describing clothing for procedural generation. Examples: ['business_suit', 'uniform_nypd', 'casual_summer', 'construction_gear']."
+        },
+        "distinguishing_features": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Notable features for witness descriptions. Examples: ['tall', 'red_hair', 'scar_left_cheek', 'limping']. Hero NPCs only."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Visual appearance data."
+    },
+    "dialogue_profile": {
+      "type": "object",
+      "properties": {
+        "voice_id": {
+          "type": "string",
+          "description": "Voice synthesis preset identifier."
+        },
+        "personality_tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Personality descriptors for dialogue generation. Examples: ['gruff', 'helpful', 'nervous', 'sarcastic', 'by_the_book']."
+        },
+        "knowledge_domains": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Topics this NPC can discuss knowledgeably. Examples: ['local_history', 'portal_rumors', 'crime_reports', 'restaurant_recommendations']."
+        },
+        "dialogue_state": {
+          "type": "string",
+          "description": "Current dialogue tree state identifier, if in conversation."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Dialogue and personality configuration. Hero NPCs only."
+    },
+    "inventory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item_id": { "type": "string" },
+          "item_type": { "type": "string" },
+          "quantity": { "type": "integer", "minimum": 1 }
+        },
+        "additionalProperties": false
+      },
+      "description": "Items carried by this NPC. Relevant for vendor NPCs and NPCs involved in quests."
+    },
+    "health": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Physical health. 1.0 = healthy. 0.0 = incapacitated or dead."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vec3": {
+      "type": "object",
+      "title": "Vector3",
+      "description": "3D vector in meters.",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

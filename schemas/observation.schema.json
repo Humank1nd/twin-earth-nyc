@@ -1,0 +1,253 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twin-earth-nyc.game/schemas/observation.schema.json",
+  "title": "Twin Earth NYC Observation",
+  "description": "An observation is a single piece of evidence captured by a sensor, witness, telemetry stream, or player action. Observations are the atomic unit of the evidence chain — they feed into ledger events, build investigation timelines, and can be challenged, corroborated, or tampered with. Every observation records who saw what, when, where, how confident the reading is, and how vulnerable it is to manipulation.",
+  "type": "object",
+  "required": [
+    "observation_id",
+    "observer_id",
+    "observer_type",
+    "target_id",
+    "target_class",
+    "time",
+    "location",
+    "modality",
+    "confidence"
+  ],
+  "properties": {
+    "observation_id": {
+      "type": "string",
+      "pattern": "^OBS_[a-f0-9]{8,}$",
+      "description": "Globally unique observation identifier. Format: OBS_{hex-hash}. Example: OBS_a3f7b20c."
+    },
+    "observer_id": {
+      "type": "string",
+      "description": "Entity ID of the observer — the camera, witness NPC, IoT device, or player entity that captured this observation. Must reference a valid entity_id."
+    },
+    "observer_type": {
+      "enum": ["cctv", "witness", "device_telemetry", "player_capture"],
+      "description": "Category of the observing source. 'cctv' = fixed or PTZ surveillance camera. 'witness' = NPC or bystander who saw/heard something. 'device_telemetry' = IoT artifact data (door lock logs, signal timings, kiosk interactions). 'player_capture' = photo, recording, or scan taken by the player."
+    },
+    "target_id": {
+      "type": "string",
+      "description": "Entity ID of the observed subject. May be null if the target is unknown or unidentified at capture time.",
+      "default": null
+    },
+    "target_class": {
+      "type": "string",
+      "description": "Semantic classification of the observed target (e.g., 'person', 'vehicle', 'anomaly', 'portal_energy_spike'). This is the observer's interpretation — it may be incorrect for unreliable observers.",
+      "examples": ["person", "vehicle", "anomaly", "portal_energy_spike", "unidentified_object", "sound_event"]
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of when the observation was recorded. For witnesses, this is approximate. For devices, this is clock-precise (subject to device clock drift)."
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Duration of the observation window in milliseconds. A snapshot is 0. A video clip or sustained sighting has positive duration."
+    },
+    "location": {
+      "$ref": "#/$defs/vec3",
+      "description": "World-space position where the observation was captured (observer's location, not the target's)."
+    },
+    "target_location": {
+      "$ref": "#/$defs/vec3",
+      "description": "Estimated world-space position of the observed target at the time of observation. May differ from observer location for ranged sensors."
+    },
+    "modality": {
+      "enum": ["visual", "audio", "thermal", "electromagnetic", "chemical", "digital_log", "haptic", "multispectral"],
+      "description": "Sensory modality of this observation. 'visual' = camera/eyewitness image. 'audio' = microphone/earwitness. 'thermal' = IR sensor. 'electromagnetic' = RF/EMF detection (portal signatures). 'chemical' = gas/particulate sensor. 'digital_log' = access log or network event. 'haptic' = vibration/touch sensor. 'multispectral' = combined sensor array."
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Observer's confidence in the observation, from 0 (no confidence / pure noise) to 1 (perfect certainty). Affected by distance, occlusion, lighting, observer reliability, and sensor quality."
+    },
+    "tamperability": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.5,
+      "description": "How vulnerable this observation is to tampering or falsification, from 0 (tamper-proof, e.g. blockchain-anchored device log) to 1 (trivially falsifiable, e.g. uncorroborated verbal witness). Players and adversaries can attempt to alter or destroy observations with high tamperability."
+    },
+    "reliability_factors": {
+      "type": "object",
+      "description": "Breakdown of factors affecting observation reliability.",
+      "properties": {
+        "sensor_quality": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Quality of the sensor hardware or witness perception. 1 = military-grade / perfect eyesight."
+        },
+        "environmental_interference": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Degree of environmental noise degrading the observation. 0 = no interference, 1 = completely obscured."
+        },
+        "observer_bias": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Witness bias or sensor calibration error. 0 = perfectly neutral, 1 = heavily biased or miscalibrated."
+        }
+      },
+      "additionalProperties": false
+    },
+    "raw_data_ref": {
+      "type": "string",
+      "format": "uri",
+      "description": "URI pointing to the raw data blob (image, audio clip, log excerpt, telemetry dump). Format depends on modality. Example: 'asset://observations/OBS_a3f7b20c/frame_001.png'."
+    },
+    "processed_data": {
+      "type": "object",
+      "description": "Machine-processed derivatives of the raw data.",
+      "properties": {
+        "transcript": {
+          "type": "string",
+          "description": "Text transcript for audio observations or OCR results for visual text."
+        },
+        "detected_entities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "entity_id": { "type": "string" },
+              "bounding_box": {
+                "type": "object",
+                "properties": {
+                  "x": { "type": "number" },
+                  "y": { "type": "number" },
+                  "width": { "type": "number" },
+                  "height": { "type": "number" }
+                }
+              },
+              "label": { "type": "string" },
+              "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          },
+          "description": "Entities detected in the observation data via computer vision or signal processing."
+        },
+        "anomaly_signature": {
+          "type": "string",
+          "description": "If this observation captures anomalous activity (portal energy, dimensional bleed), the signature hash for cross-referencing."
+        }
+      },
+      "additionalProperties": true
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Contextual metadata about conditions at the time of observation.",
+      "properties": {
+        "weather": {
+          "enum": ["clear", "cloudy", "rain", "heavy_rain", "fog", "snow", "storm", "anomalous"],
+          "description": "Weather condition at observation time. 'anomalous' indicates portal-influenced weather."
+        },
+        "lighting": {
+          "enum": ["daylight", "golden_hour", "twilight", "night_lit", "night_dark", "artificial_only", "anomalous_glow"],
+          "description": "Lighting conditions. Affects visual observation confidence."
+        },
+        "occlusion_level": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Fraction of the target occluded from the observer's viewpoint. 0 = fully visible, 1 = completely occluded."
+        },
+        "distance_to_target": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Distance in meters from observer to target. Greater distance reduces confidence for most modalities."
+        },
+        "crowd_density": {
+          "enum": ["empty", "sparse", "moderate", "dense", "crush"],
+          "description": "Crowd density around the observation point. Dense crowds increase occlusion and reduce witness reliability."
+        },
+        "noise_level_db": {
+          "type": "number",
+          "description": "Ambient noise level in decibels. Affects audio observation confidence."
+        },
+        "portal_proximity_m": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Distance in meters to the nearest active portal. Portals can distort sensors and confuse witnesses."
+        }
+      },
+      "additionalProperties": false
+    },
+    "chain_of_custody": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["holder_id", "acquired_at"],
+        "properties": {
+          "holder_id": {
+            "type": "string",
+            "description": "Entity ID of the current or past holder of this evidence."
+          },
+          "acquired_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this holder acquired the observation record."
+          },
+          "released_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this holder released the observation record. Null if current holder."
+          },
+          "integrity_hash": {
+            "type": "string",
+            "description": "Hash of the observation data at time of transfer, for tamper detection."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Ordered chain-of-custody log. Each entry records who held this observation and when. Gaps in the chain increase tamperability."
+    },
+    "corroborations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Observation ID of a corroborating observation."
+      },
+      "description": "List of other observation IDs that corroborate this one. More corroborations increase effective confidence."
+    },
+    "contradictions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Observation ID of a contradicting observation."
+      },
+      "description": "List of other observation IDs that contradict this one. Contradictions flag the observation for investigation."
+    },
+    "status": {
+      "enum": ["raw", "verified", "disputed", "tampered", "destroyed", "sealed"],
+      "default": "raw",
+      "description": "Current evidentiary status. 'raw' = unprocessed. 'verified' = corroborated and accepted. 'disputed' = contradicted by other evidence. 'tampered' = integrity compromised. 'destroyed' = data deleted or physically destroyed. 'sealed' = locked by authority, no further modifications."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp when this observation record was created in the system."
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vec3": {
+      "type": "object",
+      "title": "Vector3",
+      "description": "3D vector in meters.",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number", "description": "East-west axis. Positive = east." },
+        "y": { "type": "number", "description": "Vertical axis. Positive = up." },
+        "z": { "type": "number", "description": "North-south axis. Positive = north." }
+      },
+      "additionalProperties": false
+    }
+  }
+}

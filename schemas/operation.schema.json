@@ -1,0 +1,739 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twin-earth-nyc.game/schemas/operation.schema.json",
+  "title": "Twin Earth NYC Mission/Operation",
+  "description": "An operation is a structured mission that the player undertakes, typically involving travel to an alternate universe through a portal. Operations have a type (extract, contain, infiltrate, sabotage, escort, recon), a target universe, difficulty scaling, and a six-stage structure: preparation, insertion, objective, complication, exfiltration, and aftermath. Each stage defines its verbs (player actions available), requirements, and failure conditions. Operations also specify portal requirements, rewards, and consequences — making them the primary vehicle for narrative progression and gameplay challenge.",
+  "type": "object",
+  "required": [
+    "operation_id",
+    "name",
+    "type",
+    "target_universe_id",
+    "difficulty",
+    "stages",
+    "portal_requirements",
+    "rewards",
+    "consequences"
+  ],
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "pattern": "^OP_[A-Z0-9]+_[a-f0-9]{4,}$",
+      "description": "Globally unique operation identifier. Format: OP_{TYPE}_{hex-hash}. Example: OP_EXTRACT_7a3b, OP_RECON_c0de42."
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name of the operation. Example: 'The Brass Key Extraction', 'Noir Manhattan Recon', 'Overgrown Bronx Containment'."
+    },
+    "codename": {
+      "type": "string",
+      "description": "Optional military-style codename. Example: 'OPERATION MIDNIGHT GARDEN', 'OPERATION IRON VEIL'."
+    },
+    "description": {
+      "type": "string",
+      "description": "Narrative briefing for the player. Sets the scene, explains the stakes, and hints at what to expect."
+    },
+    "type": {
+      "enum": ["extract", "contain", "infiltrate", "sabotage", "escort", "recon"],
+      "description": "'extract' = retrieve a target (person, artifact, data) from the alternate universe. 'contain' = prevent something from crossing over (seal a portal, neutralize a threat). 'infiltrate' = penetrate a location without detection. 'sabotage' = destroy or disable a target. 'escort' = protect a VIP through hostile territory. 'recon' = gather intelligence without engaging."
+    },
+    "target_universe_id": {
+      "type": "string",
+      "pattern": "^UNI_[A-Z0-9_]+$",
+      "description": "Universe where the operation takes place. References a universe profile."
+    },
+    "target_universe_name": {
+      "type": "string",
+      "description": "Human-readable name of the target universe for display."
+    },
+    "difficulty": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Difficulty rating from 1 (tutorial/easy) to 5 (extreme/endgame). Affects enemy density, resource scarcity, portal stability, and complication severity. 1 = minimal opposition, forgiving mistakes. 3 = balanced challenge, requires planning. 5 = one-shot precision required, lethal consequences."
+    },
+    "difficulty_modifiers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["modifier", "effect"],
+        "properties": {
+          "modifier": {
+            "type": "string",
+            "description": "What modifies difficulty. Example: 'player_heat_level', 'previous_operations_failed', 'universe_hostility', 'time_pressure'."
+          },
+          "effect": {
+            "type": "string",
+            "description": "How the modifier changes difficulty. Example: '+1 difficulty if institutional heat > 0.5', 'portal stability -20% if ecological heat > 0.3'."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Dynamic difficulty modifiers based on current world state."
+    },
+    "prerequisites": {
+      "type": "object",
+      "properties": {
+        "operations_completed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Operation IDs that must be completed before this one is available."
+        },
+        "min_reputation": {
+          "type": "object",
+          "additionalProperties": { "type": "number", "minimum": -1, "maximum": 1 },
+          "description": "Minimum reputation levels required with specific factions. Key = faction name, value = minimum reputation."
+        },
+        "required_items": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Item IDs the player must possess to start this operation."
+        },
+        "narrative_flags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Narrative flags that must be set for this operation to be available."
+        },
+        "max_heat_level": {
+          "type": "string",
+          "enum": ["normal", "elevated", "high", "critical", "crisis"],
+          "description": "Maximum aggregate heat level at which this operation can be initiated. Some operations require laying low first."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Conditions that must be met before the player can start this operation."
+    },
+    "briefing": {
+      "type": "object",
+      "properties": {
+        "intelligence_level": {
+          "enum": ["minimal", "partial", "detailed", "complete"],
+          "description": "How much intel the player has about the operation. 'minimal' = only the objective is known. 'complete' = full map, enemy positions, and contingency plans provided."
+        },
+        "known_threats": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Threats briefed to the player beforehand. Example: ['armed_guards', 'anomalous_gravity_zones', 'surveillance_network']."
+        },
+        "recommended_loadout": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Suggested equipment. Example: ['portal_stabilizer', 'signal_jammer', 'climbing_gear']."
+        },
+        "map_ref": {
+          "type": "string",
+          "format": "uri",
+          "description": "Reference to the operation area map asset."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Pre-operation briefing information."
+    },
+    "stages": {
+      "type": "object",
+      "required": ["prep", "insertion", "objective", "complication", "exfil", "aftermath"],
+      "properties": {
+        "prep": {
+          "$ref": "#/$defs/operation_stage",
+          "description": "Preparation stage. Gather intel, acquire equipment, scout the portal site, establish safe houses. Takes place in the base universe."
+        },
+        "insertion": {
+          "$ref": "#/$defs/operation_stage",
+          "description": "Insertion stage. Transit through the portal into the target universe. Manage portal stability, avoid detection on arrival, establish a foothold."
+        },
+        "objective": {
+          "$ref": "#/$defs/operation_stage",
+          "description": "Objective stage. Execute the primary mission goal: extract the target, plant the device, reach the location, gather the intel."
+        },
+        "complication": {
+          "$ref": "#/$defs/operation_stage",
+          "description": "Complication stage. Something goes wrong. The plan deviates. This is the crisis point where player skill and improvisation are tested. The complication may be scripted or procedurally generated based on player actions and world state."
+        },
+        "exfil": {
+          "$ref": "#/$defs/operation_stage",
+          "description": "Exfiltration stage. Escape the target universe. Return to the portal (which may have moved, destabilized, or been discovered). Extract before the window closes."
+        },
+        "aftermath": {
+          "$ref": "#/$defs/operation_stage",
+          "description": "Aftermath stage. Back in the base universe. Deal with consequences: heat changes, faction reactions, evidence cleanup, reward collection, narrative branching."
+        }
+      },
+      "additionalProperties": false,
+      "description": "The six stages of the operation, in chronological order. Each stage has its own verbs, requirements, and failure conditions."
+    },
+    "portal_requirements": {
+      "type": "object",
+      "required": ["stability_min", "bandwidth_min"],
+      "properties": {
+        "stability_min": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Minimum portal stability required for safe insertion. Below this, insertion is possible but risky (equipment damage, disorientation, random destination offset)."
+        },
+        "bandwidth_min": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Minimum portal bandwidth in kg/s required. Determines how quickly the team can insert and exfil. Low bandwidth means slow, dangerous crossings."
+        },
+        "portal_type_required": {
+          "enum": ["any", "natural", "artificial", "stabilized"],
+          "description": "Whether the operation requires a specific type of portal. 'stabilized' = must have a stabilization device active."
+        },
+        "max_entropy_bleed_m": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Maximum acceptable entropy bleed radius. Large bleed means the portal is noisy and attracts attention."
+        },
+        "dual_portal_required": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the operation requires a separate exfil portal (true) or can use the same portal for insertion and exfil (false)."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Portal specifications needed to execute this operation."
+    },
+    "team": {
+      "type": "object",
+      "properties": {
+        "min_size": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Minimum team size (including player)."
+        },
+        "max_size": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum team size."
+        },
+        "required_roles": {
+          "type": "array",
+          "items": {
+            "enum": ["leader", "technician", "muscle", "scout", "medic", "pilot", "hacker"],
+            "description": "Required team role."
+          },
+          "description": "Roles that must be filled for the operation."
+        },
+        "npc_companions_available": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "npc_id": { "type": "string" },
+              "role": { "type": "string" },
+              "skill_level": { "type": "number", "minimum": 0, "maximum": 1 }
+            },
+            "additionalProperties": false
+          },
+          "description": "NPC companions available to recruit for this operation."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Team composition requirements and options."
+    },
+    "time_constraints": {
+      "type": "object",
+      "properties": {
+        "total_time_limit_s": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum total operation duration in seconds. 0 = no time limit."
+        },
+        "portal_window_s": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How long the portal remains stable enough for transit in seconds."
+        },
+        "objective_deadline_s": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Time from insertion to complete the objective before the complication escalates."
+        },
+        "real_time": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether time constraints are in real-time (true) or simulation-time (false). Real-time creates urgency."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Temporal constraints on the operation."
+    },
+    "rewards": {
+      "type": "object",
+      "required": ["items", "reputation_changes"],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["item_id", "item_name", "guaranteed"],
+            "properties": {
+              "item_id": {
+                "type": "string",
+                "description": "Unique item identifier."
+              },
+              "item_name": {
+                "type": "string",
+                "description": "Display name of the item."
+              },
+              "item_type": {
+                "enum": ["weapon", "tool", "material", "data", "artifact", "currency", "cosmetic", "key_item"],
+                "description": "Item category."
+              },
+              "guaranteed": {
+                "type": "boolean",
+                "description": "Whether this item is guaranteed on completion (true) or a chance drop (false)."
+              },
+              "drop_chance": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Probability of receiving this item if not guaranteed."
+              },
+              "condition": {
+                "type": "string",
+                "description": "Optional condition for receiving this reward. Example: 'no_alarms_triggered', 'all_hostages_rescued', 'under_time_limit'."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Items rewarded on operation completion."
+        },
+        "reputation_changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["faction", "change"],
+            "properties": {
+              "faction": {
+                "type": "string",
+                "description": "Faction affected."
+              },
+              "change": {
+                "type": "number",
+                "minimum": -1,
+                "maximum": 1,
+                "description": "Reputation change. Positive = improved standing. Negative = worsened standing."
+              },
+              "condition": {
+                "type": "string",
+                "description": "Optional condition. Example: 'on_success', 'on_failure', 'always', 'stealth_completion'."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Faction reputation changes from completing (or failing) the operation."
+        },
+        "intel": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "intel_type": {
+                "enum": ["universe_data", "portal_location", "faction_secret", "operation_unlock", "map_reveal", "npc_contact"],
+                "description": "Type of intelligence gained."
+              },
+              "description": { "type": "string" },
+              "unlocks": { "type": "string", "description": "What this intel unlocks. Example: 'OP_EXTRACT_8b2c' (a new operation)." }
+            },
+            "additionalProperties": false
+          },
+          "description": "Intelligence gathered during the operation."
+        },
+        "experience_points": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Experience points awarded on completion."
+        },
+        "bonus_rewards": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "condition": { "type": "string", "description": "Condition for the bonus. Example: 'zero_casualties', 'all_optional_objectives', 'speed_run_under_300s'." },
+              "reward_description": { "type": "string" },
+              "items": { "type": "array", "items": { "type": "string" } }
+            },
+            "additionalProperties": false
+          },
+          "description": "Bonus rewards for achieving optional objectives or special conditions."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Rewards earned from this operation."
+    },
+    "consequences": {
+      "type": "object",
+      "required": ["heat_impact", "evidence_generated"],
+      "properties": {
+        "heat_impact": {
+          "type": "object",
+          "properties": {
+            "on_success": {
+              "type": "object",
+              "properties": {
+                "physical": { "type": "number" },
+                "social": { "type": "number" },
+                "institutional": { "type": "number" },
+                "ecological": { "type": "number" }
+              },
+              "additionalProperties": false,
+              "description": "Heat impact on the base universe if the operation succeeds."
+            },
+            "on_failure": {
+              "type": "object",
+              "properties": {
+                "physical": { "type": "number" },
+                "social": { "type": "number" },
+                "institutional": { "type": "number" },
+                "ecological": { "type": "number" }
+              },
+              "additionalProperties": false,
+              "description": "Heat impact if the operation fails. Typically worse than success."
+            },
+            "on_abort": {
+              "type": "object",
+              "properties": {
+                "physical": { "type": "number" },
+                "social": { "type": "number" },
+                "institutional": { "type": "number" },
+                "ecological": { "type": "number" }
+              },
+              "additionalProperties": false,
+              "description": "Heat impact if the player aborts mid-operation."
+            },
+            "stealth_bonus": {
+              "type": "object",
+              "properties": {
+                "physical": { "type": "number" },
+                "social": { "type": "number" },
+                "institutional": { "type": "number" },
+                "ecological": { "type": "number" }
+              },
+              "additionalProperties": false,
+              "description": "Heat reduction bonus for completing the operation without detection."
+            }
+          },
+          "additionalProperties": false,
+          "description": "Heat consequences across all outcome paths."
+        },
+        "evidence_generated": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["evidence_type", "generation_stage"],
+            "properties": {
+              "evidence_type": {
+                "enum": ["visual", "audio", "digital_log", "witness_testimony", "forensic", "dimensional_trace"],
+                "description": "Type of evidence produced."
+              },
+              "generation_stage": {
+                "enum": ["prep", "insertion", "objective", "complication", "exfil", "aftermath"],
+                "description": "Which operation stage generates this evidence."
+              },
+              "avoidable": {
+                "type": "boolean",
+                "description": "Whether the player can prevent this evidence from being generated through stealth or countermeasures."
+              },
+              "description": {
+                "type": "string",
+                "description": "What the evidence records. Example: 'CCTV footage of portal activation in Central Park', 'Witness testimony of armed individuals near subway entrance'."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Evidence that the operation generates in the base universe. Evidence feeds into the ledger and can be investigated by authorities."
+        },
+        "faction_responses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["faction", "response"],
+            "properties": {
+              "faction": {
+                "type": "string",
+                "description": "Responding faction."
+              },
+              "response": {
+                "type": "string",
+                "description": "How the faction responds. Example: 'NYPD opens investigation', 'Portal cult attempts recruitment', 'Federal agents surveil player'."
+              },
+              "trigger_condition": {
+                "enum": ["always", "on_success", "on_failure", "on_detection", "on_high_heat"],
+                "description": "When this response triggers."
+              },
+              "delay_s": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Delay in seconds before the response activates."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "NPC faction responses triggered by the operation."
+        },
+        "persistent_changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["change_type", "description"],
+            "properties": {
+              "change_type": {
+                "enum": [
+                  "portal_state_change",
+                  "npc_death",
+                  "npc_relationship_change",
+                  "area_damage",
+                  "area_contamination",
+                  "new_portal_site",
+                  "artifact_destroyed",
+                  "narrative_flag_set",
+                  "faction_power_shift",
+                  "new_npc_spawned"
+                ],
+                "description": "Type of persistent world change."
+              },
+              "description": {
+                "type": "string",
+                "description": "What specifically changes in the world."
+              },
+              "reversible": {
+                "type": "boolean",
+                "description": "Whether this change can be undone by future actions."
+              },
+              "entity_ids": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Entities affected by this persistent change."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Permanent changes to the world state resulting from the operation. These persist across sessions and affect future operations."
+        },
+        "follow_up_operations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "operation_id": { "type": "string" },
+              "unlock_condition": { "enum": ["on_success", "on_failure", "always", "conditional"] },
+              "condition_detail": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "description": "Operations unlocked by this operation's outcome."
+        }
+      },
+      "additionalProperties": false,
+      "description": "All consequences of the operation across success, failure, and abort paths."
+    },
+    "optional_objectives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["objective_id", "description"],
+        "properties": {
+          "objective_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "description": "What the optional objective requires. Example: 'Recover the secondary artifact from the vault', 'Complete without any NPC casualties'."
+          },
+          "reward_ref": {
+            "type": "string",
+            "description": "Reference to the bonus reward for completing this objective."
+          },
+          "hidden": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether this objective is hidden from the player until discovered."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Optional objectives that provide bonus rewards and narrative depth."
+    },
+    "status": {
+      "enum": ["available", "locked", "active", "completed_success", "completed_failure", "aborted", "expired"],
+      "description": "Current status of this operation for the player."
+    },
+    "attempts": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Number of times the player has attempted this operation."
+    },
+    "best_completion": {
+      "type": "object",
+      "properties": {
+        "time_s": { "type": "number", "description": "Best completion time in seconds." },
+        "stealth_rating": { "type": "number", "minimum": 0, "maximum": 1, "description": "Stealth score from best attempt." },
+        "optional_completed": { "type": "integer", "description": "Most optional objectives completed." },
+        "heat_generated": { "type": "number", "description": "Lowest heat generated in a successful attempt." }
+      },
+      "additionalProperties": false,
+      "description": "Best performance metrics from previous attempts."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Schema version for this operation definition."
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "operation_stage": {
+      "type": "object",
+      "required": ["description", "verbs", "requirements", "failure_conditions"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Narrative description of this stage. Sets the scene and explains what the player needs to accomplish."
+        },
+        "verbs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["verb", "description"],
+            "properties": {
+              "verb": {
+                "type": "string",
+                "description": "Action verb available to the player in this stage. Examples: 'scout', 'hack', 'fight', 'sneak', 'negotiate', 'stabilize_portal', 'plant_device', 'extract_target', 'flee', 'bribe', 'disguise', 'scan', 'disarm'."
+              },
+              "description": {
+                "type": "string",
+                "description": "What this verb does in context."
+              },
+              "skill_check": {
+                "type": "object",
+                "properties": {
+                  "skill": { "type": "string" },
+                  "difficulty": { "type": "number", "minimum": 0, "maximum": 1 }
+                },
+                "additionalProperties": false,
+                "description": "Skill check required to successfully execute this verb."
+              },
+              "heat_cost": {
+                "type": "object",
+                "properties": {
+                  "physical": { "type": "number" },
+                  "social": { "type": "number" },
+                  "institutional": { "type": "number" },
+                  "ecological": { "type": "number" }
+                },
+                "additionalProperties": false,
+                "description": "Heat generated by using this verb."
+              },
+              "cooldown_s": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Cooldown in seconds before this verb can be used again."
+              },
+              "requires_item": {
+                "type": "string",
+                "description": "Item ID required to use this verb."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Player actions available during this stage. The verb list defines the gameplay vocabulary for the stage."
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["requirement", "description"],
+            "properties": {
+              "requirement": {
+                "type": "string",
+                "description": "Requirement identifier. Example: 'portal_stable', 'target_located', 'guards_neutralized', 'escape_route_clear'."
+              },
+              "description": {
+                "type": "string",
+                "description": "What must be true to proceed to the next stage."
+              },
+              "optional": {
+                "type": "boolean",
+                "default": false,
+                "description": "If true, this requirement enhances the outcome but is not mandatory."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Conditions that must be met to complete this stage and advance."
+        },
+        "failure_conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["condition", "consequence"],
+            "properties": {
+              "condition": {
+                "type": "string",
+                "description": "What triggers failure. Example: 'player_detected', 'portal_collapsed', 'target_killed', 'time_expired', 'team_wiped'."
+              },
+              "consequence": {
+                "enum": ["stage_restart", "complication_escalation", "operation_failure", "partial_success", "alternate_path"],
+                "description": "What happens when this failure triggers. 'stage_restart' = retry this stage. 'complication_escalation' = jump to a harder complication. 'operation_failure' = mission failed. 'partial_success' = reduced rewards, some objectives met. 'alternate_path' = triggers a different narrative branch."
+              },
+              "description": {
+                "type": "string",
+                "description": "Narrative description of the failure and its consequences."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Conditions that cause stage failure and their consequences."
+        },
+        "environment": {
+          "type": "object",
+          "properties": {
+            "location_description": { "type": "string" },
+            "hazards": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Environmental hazards present. Examples: ['low_gravity', 'toxic_air', 'hostile_fauna', 'reality_glitches']."
+            },
+            "allies_present": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Friendly NPC IDs present in this stage."
+            },
+            "enemies_present": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "npc_type": { "type": "string" },
+                  "count": { "type": "integer", "minimum": 0 },
+                  "difficulty": { "type": "number", "minimum": 0, "maximum": 1 }
+                },
+                "additionalProperties": false
+              },
+              "description": "Hostile NPC types and counts."
+            }
+          },
+          "additionalProperties": false,
+          "description": "Environmental details for this stage."
+        },
+        "estimated_duration_s": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Estimated time in seconds for this stage under normal play."
+        },
+        "music_ref": {
+          "type": "string",
+          "description": "Audio asset reference for this stage's music/ambience."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

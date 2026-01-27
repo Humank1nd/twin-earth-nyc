@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twin-earth-nyc.game/schemas/entity.schema.json",
+  "title": "Twin Earth NYC Entity",
+  "description": "Universal entity format for every addressable object in the Twin Earth NYC simulation. Entities span persons, vehicles, infrastructure, anomalies, portals, and environmental props. Each entity carries a unique ID, spatial placement, semantic classification, affordance list, LOD tier, and an extensible component bag for system-specific data.",
+  "type": "object",
+  "required": ["entity_id", "entity_type", "position", "region"],
+  "properties": {
+    "entity_id": {
+      "type": "string",
+      "pattern": "^ENT_[A-Z]+_[A-Z0-9]+_[a-f0-9]{4,}$",
+      "description": "Globally unique entity identifier. Format: ENT_{TYPE}_{REGION}_{hex-hash}. Example: ENT_PERSON_MIDTOWN_a3f7, ENT_PORTAL_HARLEM_00bc4e."
+    },
+    "entity_type": {
+      "enum": [
+        "person",
+        "vehicle",
+        "door",
+        "camera",
+        "signal",
+        "crosswalk",
+        "kiosk",
+        "prop",
+        "billboard",
+        "landmark",
+        "anomaly",
+        "portal",
+        "artifact"
+      ],
+      "description": "Primary classification of this entity. Determines which subsystems process it: 'person' and 'vehicle' feed NPC/traffic, 'camera'/'signal'/'crosswalk'/'kiosk'/'door' feed IoT artifact layer, 'anomaly'/'portal' feed the multiverse engine, 'prop'/'billboard'/'landmark' feed the rendering and narrative layers."
+    },
+    "position": {
+      "$ref": "#/$defs/vec3",
+      "description": "World-space position in meters. Origin (0,0,0) is the southwest corner of the playable area at sea level."
+    },
+    "rotation": {
+      "$ref": "#/$defs/quat",
+      "description": "Orientation as a unit quaternion. Defaults to identity (0,0,0,1) — facing north along +Z."
+    },
+    "region": {
+      "type": "string",
+      "description": "Named region this entity belongs to (e.g., 'midtown', 'harlem', 'financial_district'). Used for spatial partitioning, heat tracking, and LOD budgeting.",
+      "examples": ["midtown", "harlem", "financial_district", "chelsea", "lower_east_side"]
+    },
+    "block": {
+      "type": "string",
+      "description": "Optional finer-grained block identifier within the region. Matches street-grid block names (e.g., 'W42_7AV_8AV').",
+      "examples": ["W42_7AV_8AV", "E14_1AV_2AV"]
+    },
+    "persistent": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, this entity survives session boundaries and is saved to the persistent world store. Non-persistent entities are ephemeral (background crowd, transient vehicles)."
+    },
+    "semantic_class": {
+      "type": "string",
+      "description": "Human-readable semantic tag for AI reasoning and observation classification. Examples: 'yellow_cab', 'fire_hydrant', 'street_lamp', 'dimensional_rift'.",
+      "examples": ["yellow_cab", "fire_hydrant", "street_lamp", "dimensional_rift", "newspaper_stand"]
+    },
+    "material": {
+      "type": "string",
+      "description": "Primary material for physics interaction and rendering. Affects sound propagation, damage modeling, and visual shaders.",
+      "examples": ["concrete", "glass", "steel", "wood", "fabric", "energy_field", "unknown_matter"]
+    },
+    "affordances": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "walk",
+          "drive",
+          "climb",
+          "block",
+          "interact",
+          "observe",
+          "emit_light",
+          "log_events"
+        ]
+      },
+      "uniqueItems": true,
+      "description": "Actions this entity supports. 'walk'/'drive'/'climb' indicate traversal surfaces. 'block' means it is an obstacle. 'interact' means the player can engage with it. 'observe' means it has line-of-sight sensing. 'emit_light' means it contributes to the lighting model. 'log_events' means it writes to the evidence ledger."
+    },
+    "lod_tier": {
+      "enum": ["L0", "L1", "L2", "CULLED"],
+      "description": "Level-of-detail tier. L0 = full detail (hero entities, nearby). L1 = reduced detail (mid-range). L2 = minimal detail (distant). CULLED = not rendered or simulated this frame."
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Extensible component bag. Each key is a component type name (e.g., 'npc', 'artifact', 'portal', 'physics_body', 'render_mesh') and the value is component-specific data. This is the primary extension point for attaching subsystem-specific state to any entity."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "description": "Freeform tags for query filtering. Examples: ['evidence_source', 'destructible', 'quest_critical', 'imported_from_alt_universe']."
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "Optional entity_id of the owning entity (e.g., a door owned by a building, a camera owned by a precinct). Used for permission and chain-of-custody reasoning."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp when this entity was first instantiated in the simulation."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of the most recent mutation to any field on this entity."
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vec3": {
+      "type": "object",
+      "title": "Vector3",
+      "description": "3D vector in meters. Used for positions, velocities, and directions.",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number", "description": "East-west axis. Positive = east." },
+        "y": { "type": "number", "description": "Vertical axis. Positive = up." },
+        "z": { "type": "number", "description": "North-south axis. Positive = north." }
+      },
+      "additionalProperties": false
+    },
+    "quat": {
+      "type": "object",
+      "title": "Quaternion",
+      "description": "Unit quaternion for rotation. Must satisfy x^2+y^2+z^2+w^2 = 1 (within floating-point tolerance).",
+      "required": ["x", "y", "z", "w"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" },
+        "w": { "type": "number" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

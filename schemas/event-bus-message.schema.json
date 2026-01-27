@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twin-earth-nyc.game/schemas/event-bus-message.schema.json",
+  "title": "Twin Earth NYC Event Bus Message",
+  "description": "An event bus message is the fundamental unit of inter-system communication in the Twin Earth NYC simulation. All subsystems (IoT artifacts, NPC AI, heat engine, ledger, portal manager, authority response, rendering) communicate through a publish-subscribe event bus. Each message has a hierarchical topic (domain.type.action), a payload that varies by topic, a priority level, a time-to-live, and acknowledgment tracking. The event bus is the nervous system of the simulation — it connects sensors to actuators, events to responses, and observations to ledger entries.",
+  "type": "object",
+  "required": [
+    "message_id",
+    "topic",
+    "timestamp",
+    "source_entity_id",
+    "payload",
+    "priority"
+  ],
+  "properties": {
+    "message_id": {
+      "type": "string",
+      "pattern": "^MSG_[a-f0-9]{8,}$",
+      "description": "Globally unique message identifier. Format: MSG_{hex-hash}. Example: MSG_b4e2c0a7."
+    },
+    "topic": {
+      "type": "string",
+      "pattern": "^[a-z_]+\\.[a-z_]+\\.[a-z_]+$",
+      "description": "Hierarchical message topic in the format domain.type.action. Subscribers filter on topic patterns (wildcards supported). Examples: 'traffic.signal.state_change', 'security.camera.motion_detected', 'portal.lifecycle.state_change', 'heat.region.level_change', 'npc.behavior.goal_change', 'ledger.event.committed', 'authority.response.dispatched'.",
+      "examples": [
+        "traffic.signal.state_change",
+        "security.camera.motion_detected",
+        "security.camera.tamper_detected",
+        "security.door.access_attempt",
+        "security.door.forced_entry",
+        "portal.lifecycle.state_change",
+        "portal.transit.entity_crossed",
+        "portal.entropy.bleed_expanded",
+        "heat.region.level_change",
+        "heat.channel.spike",
+        "npc.behavior.goal_change",
+        "npc.perception.threat_detected",
+        "npc.memory.event_recorded",
+        "ledger.event.created",
+        "ledger.event.committed",
+        "authority.response.dispatched",
+        "authority.response.completed",
+        "observation.created.new_evidence",
+        "observation.status.tampered",
+        "world.state.node_created",
+        "world.weather.condition_change",
+        "artifact.health.degraded",
+        "artifact.failure.mode_triggered",
+        "player.action.interaction",
+        "player.action.transit"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of when the message was published to the bus."
+    },
+    "source_entity_id": {
+      "type": "string",
+      "description": "Entity ID of the entity that generated this message. For system-level messages, this is a synthetic entity ID representing the subsystem (e.g., 'SYS_HEAT_ENGINE', 'SYS_PORTAL_MANAGER')."
+    },
+    "source_subsystem": {
+      "type": "string",
+      "description": "Name of the subsystem that published this message. Examples: 'artifact_layer', 'npc_ai', 'heat_engine', 'portal_manager', 'ledger', 'authority_response', 'world_state', 'player_input'.",
+      "examples": [
+        "artifact_layer",
+        "npc_ai",
+        "heat_engine",
+        "portal_manager",
+        "ledger",
+        "authority_response",
+        "world_state",
+        "player_input",
+        "observation_pipeline",
+        "proposal_engine"
+      ]
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Message payload. Structure varies by topic. The payload carries all data needed for subscribers to act on the message. Common payload patterns include: state change payloads (old_state, new_state, reason), detection payloads (detected_entity_id, confidence, location), lifecycle payloads (phase, trigger, metadata). See topic-specific documentation for payload schemas."
+    },
+    "payload_schema_ref": {
+      "type": "string",
+      "format": "uri",
+      "description": "Optional URI reference to the JSON Schema that validates this message's payload. Enables runtime payload validation."
+    },
+    "priority": {
+      "enum": ["low", "normal", "high", "critical"],
+      "description": "Message delivery priority. 'low' = batch-processable, can be delayed. 'normal' = standard delivery, processed in order. 'high' = expedited delivery, jumps ahead of normal messages. 'critical' = immediate processing required, interrupts current work. Examples: weather changes are 'low', NPC goal changes are 'normal', security breaches are 'high', portal collapses are 'critical'."
+    },
+    "ttl_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Time-to-live in milliseconds. After this duration, the message is discarded if not yet consumed. 0 = no expiration (persistent message). Short TTLs are used for ephemeral state (real-time sensor readings). Long TTLs for important events (ledger commits, authority responses)."
+    },
+    "acknowledged": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether at least one subscriber has acknowledged processing this message. Used for delivery guarantees on critical messages. Unacknowledged critical messages may be re-delivered."
+    },
+    "acknowledgments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["subscriber_id", "acknowledged_at"],
+        "properties": {
+          "subscriber_id": {
+            "type": "string",
+            "description": "Identifier of the subscribing subsystem."
+          },
+          "acknowledged_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "processing_time_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Time taken by this subscriber to process the message."
+          },
+          "result": {
+            "enum": ["success", "partial", "error", "ignored"],
+            "description": "Processing result. 'success' = fully processed. 'partial' = partially handled. 'error' = processing failed. 'ignored' = subscriber decided message was not relevant."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Detailed acknowledgment log from each subscriber that processed this message."
+    },
+    "correlation_id": {
+      "type": "string",
+      "description": "Optional correlation identifier linking related messages across a causal chain. All messages triggered by the same root event share a correlation_id for distributed tracing."
+    },
+    "reply_to_topic": {
+      "type": "string",
+      "description": "Optional topic for response messages. Used in request-reply patterns where the publisher expects a response."
+    },
+    "headers": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Optional key-value headers for routing, filtering, and metadata. Examples: {'region': 'midtown', 'universe_id': 'UNI_BASELINE', 'trace_id': 'abc123'}."
+    },
+    "sequence_number": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Monotonically increasing sequence number within the topic partition. Used for ordering guarantees and duplicate detection."
+    },
+    "partition_key": {
+      "type": "string",
+      "description": "Key used to determine which partition handles this message. Typically the region or entity ID, ensuring that messages about the same entity/region are processed in order."
+    },
+    "retry_count": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Number of times this message has been re-delivered after failed processing."
+    },
+    "max_retries": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 3,
+      "description": "Maximum number of retry attempts before the message is sent to the dead letter queue."
+    },
+    "dead_lettered": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this message has been moved to the dead letter queue after exceeding max retries."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "System timestamp when this message record was created (may differ from the event timestamp if there is processing delay)."
+    }
+  },
+  "additionalProperties": false
+}

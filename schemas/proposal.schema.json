@@ -1,0 +1,371 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twin-earth-nyc.game/schemas/proposal.schema.json",
+  "title": "Twin Earth NYC World Model Proposal",
+  "description": "A proposal is a speculative request to change the world state. Before any significant change is applied to the canonical world, it goes through the proposal pipeline: creation, constraint checking, simulation, review, and commit/reject. Proposals carry an intent (what the change is trying to achieve), the constraints that were evaluated, the assets affected, a confidence score, rollback instructions, and the detailed list of proposed changes. The proposal system is the gatekeeper of world consistency — it prevents impossible, contradictory, or balance-breaking changes from being applied.",
+  "type": "object",
+  "required": [
+    "proposal_id",
+    "intent",
+    "constraints_used",
+    "assets_affected",
+    "confidence",
+    "proposed_changes",
+    "status"
+  ],
+  "properties": {
+    "proposal_id": {
+      "type": "string",
+      "pattern": "^PROP_[a-f0-9]{8,}$",
+      "description": "Globally unique proposal identifier. Format: PROP_{hex-hash}. Example: PROP_e7a3b1c0."
+    },
+    "intent": {
+      "type": "string",
+      "description": "Human-readable description of what this proposal intends to accomplish. Written as a declarative goal statement. Examples: 'Damage facade of building at 412 W 42nd after player explosion', 'Spawn portal in Central Park responding to artifact activation', 'Transition traffic signal to emergency mode for police pursuit'."
+    },
+    "intent_category": {
+      "enum": [
+        "damage",
+        "spawn",
+        "despawn",
+        "state_change",
+        "position_change",
+        "portal_lifecycle",
+        "heat_modification",
+        "authority_action",
+        "narrative_progression",
+        "environmental_change",
+        "repair",
+        "composite"
+      ],
+      "description": "Category of the intended change. 'composite' for proposals that bundle multiple change types."
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "subsystem": {
+          "type": "string",
+          "description": "Subsystem that generated this proposal. Examples: 'player_action_handler', 'npc_ai', 'portal_manager', 'heat_engine', 'narrative_engine', 'world_model_ai'."
+        },
+        "trigger_event_id": {
+          "type": "string",
+          "description": "Event ID that triggered this proposal, if any."
+        },
+        "trigger_message_id": {
+          "type": "string",
+          "description": "Event bus message ID that triggered this proposal, if any."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Origin information for this proposal."
+    },
+    "constraints_used": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["constraint_name", "result"],
+        "properties": {
+          "constraint_name": {
+            "type": "string",
+            "description": "Name of the constraint that was evaluated. Examples: 'physics_plausibility', 'material_compatibility', 'heat_budget', 'entity_exists', 'position_valid', 'portal_stability_sufficient', 'authority_permission', 'narrative_consistency', 'lod_budget', 'performance_budget'."
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of what this constraint checks."
+          },
+          "result": {
+            "enum": ["pass", "warn", "fail"],
+            "description": "'pass' = constraint satisfied. 'warn' = constraint marginally satisfied, proceed with caution. 'fail' = constraint violated, proposal should be rejected."
+          },
+          "detail": {
+            "type": "string",
+            "description": "Explanation of the constraint evaluation result. For failures: what went wrong. For warnings: what is marginal."
+          },
+          "severity": {
+            "enum": ["advisory", "blocking"],
+            "description": "'advisory' = a failure is a recommendation, not a hard block. 'blocking' = a failure prevents the proposal from being accepted."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "All constraints evaluated against this proposal, with their results. A proposal with any blocking failures cannot be accepted."
+    },
+    "assets_affected": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Entity IDs of all entities that would be modified, created, or destroyed by this proposal. Used for conflict detection — two proposals affecting the same entity cannot be committed simultaneously without resolution."
+    },
+    "regions_affected": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Region names affected by this proposal. Used for spatial conflict detection and heat impact routing."
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Proposer's confidence that this change is correct, appropriate, and will not cause unintended consequences. 0 = blind guess. 1 = mathematically certain. Low-confidence proposals receive more scrutiny and may require simulation. AI-generated proposals typically range 0.6-0.9. Player-action-derived proposals are typically 0.95+."
+    },
+    "rollback_path": {
+      "type": "object",
+      "required": ["strategy"],
+      "properties": {
+        "strategy": {
+          "enum": ["inverse_changes", "snapshot_restore", "event_replay", "manual", "irreversible"],
+          "description": "'inverse_changes' = apply the reverse of each proposed change. 'snapshot_restore' = restore from a world state snapshot. 'event_replay' = replay events from a checkpoint, skipping this proposal. 'manual' = requires human/designer intervention to undo. 'irreversible' = cannot be rolled back (e.g., NPC death in a no-respawn universe)."
+        },
+        "snapshot_ref": {
+          "type": "string",
+          "format": "uri",
+          "description": "Reference to the pre-proposal snapshot, if snapshot_restore strategy."
+        },
+        "inverse_changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["entity_id", "field", "restore_value"],
+            "properties": {
+              "entity_id": { "type": "string" },
+              "field": { "type": "string" },
+              "restore_value": { "description": "Value to restore on rollback." }
+            },
+            "additionalProperties": false
+          },
+          "description": "Explicit inverse operations for inverse_changes strategy."
+        },
+        "estimated_rollback_time_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Estimated time to complete rollback in milliseconds."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Instructions for undoing this proposal if it needs to be rolled back after commitment."
+    },
+    "audit_note": {
+      "type": "string",
+      "description": "Freeform note for the audit trail. Explains reasoning, edge cases considered, or designer override justification. Persists permanently for post-mortem analysis."
+    },
+    "proposed_changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["entity_id", "field", "new_value"],
+        "properties": {
+          "entity_id": {
+            "type": "string",
+            "description": "Entity ID being modified. For spawn operations, this is the new entity's ID."
+          },
+          "operation": {
+            "enum": ["modify", "create", "delete"],
+            "default": "modify",
+            "description": "'modify' = change a field on an existing entity. 'create' = spawn a new entity. 'delete' = remove an entity."
+          },
+          "field": {
+            "type": "string",
+            "description": "Dot-notation path to the field being changed. Example: 'position.x', 'state.operational_mode', 'components.npc.stress_level'. For 'create' operations, this is 'entity' (the entire entity). For 'delete', this is 'entity'."
+          },
+          "old_value": {
+            "description": "Current value of the field before the change. Null for 'create' operations. Used for conflict detection — if the actual current value differs from old_value, the proposal is stale and must be re-evaluated."
+          },
+          "new_value": {
+            "description": "Proposed new value for the field. Null for 'delete' operations. Type must match the field's schema definition."
+          },
+          "change_reason": {
+            "type": "string",
+            "description": "Why this specific field change is needed. Example: 'Explosion blast radius reached this facade panel', 'Portal stability dropped below threshold'."
+          }
+        },
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "description": "The atomic list of changes this proposal applies. Each change targets one field on one entity. Changes are applied atomically — all succeed or all fail."
+    },
+    "status": {
+      "enum": ["pending", "simulating", "accepted", "rejected", "committed"],
+      "description": "'pending' = awaiting evaluation. 'simulating' = running in a sandbox branch to predict outcomes. 'accepted' = passed all constraints and simulation, ready to commit. 'rejected' = failed constraints or simulation, will not be applied. 'committed' = applied to the canonical world state."
+    },
+    "status_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["status", "timestamp"],
+        "properties": {
+          "status": { "enum": ["pending", "simulating", "accepted", "rejected", "committed"] },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "reason": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "description": "History of status transitions for auditability."
+    },
+    "simulation_results": {
+      "type": "object",
+      "description": "Results from running this proposal in the simulation sandbox. Populated when status transitions from 'simulating' to 'accepted' or 'rejected'.",
+      "properties": {
+        "simulation_branch_id": {
+          "type": "string",
+          "description": "World state branch ID used for the simulation."
+        },
+        "simulation_duration_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How long the simulation ran in milliseconds."
+        },
+        "simulated_time_span_s": {
+          "type": "number",
+          "minimum": 0,
+          "description": "How much simulation time was covered in seconds."
+        },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "heat_delta": {
+              "type": "object",
+              "properties": {
+                "physical": { "type": "number" },
+                "social": { "type": "number" },
+                "institutional": { "type": "number" },
+                "ecological": { "type": "number" },
+                "aggregate": { "type": "number" }
+              },
+              "additionalProperties": false,
+              "description": "Predicted heat impact from the simulation."
+            },
+            "entities_affected_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of entities that changed state during the simulation."
+            },
+            "cascade_events_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of follow-on events triggered by the proposed change during simulation."
+            },
+            "npc_panic_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of NPCs that entered panic state during simulation."
+            },
+            "authority_responses_triggered": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Types of authority responses triggered during simulation."
+            },
+            "performance_impact": {
+              "type": "object",
+              "properties": {
+                "frame_time_delta_ms": { "type": "number", "description": "Estimated frame time impact in milliseconds." },
+                "memory_delta_mb": { "type": "number", "description": "Estimated memory impact in megabytes." },
+                "entity_count_delta": { "type": "integer", "description": "Net change in active entity count." }
+              },
+              "additionalProperties": false,
+              "description": "Predicted performance impact."
+            },
+            "narrative_flags_set": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Narrative flags that would be set by this proposal's consequences."
+            },
+            "risk_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Overall risk score from the simulation. 0 = safe, predictable outcome. 1 = extremely risky, chaotic consequences. Proposals above the risk threshold require reviewer override."
+            }
+          },
+          "additionalProperties": false,
+          "description": "Quantitative metrics from the simulation run."
+        },
+        "side_effects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": { "type": "string" },
+              "severity": { "enum": ["negligible", "minor", "moderate", "major", "critical"] },
+              "entity_ids": { "type": "array", "items": { "type": "string" } }
+            },
+            "additionalProperties": false
+          },
+          "description": "Unintended side effects discovered during simulation."
+        },
+        "recommendation": {
+          "enum": ["accept", "accept_with_modifications", "reject", "needs_review"],
+          "description": "Simulation engine's recommendation for this proposal."
+        },
+        "modification_suggestions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Suggested modifications if the recommendation is 'accept_with_modifications'."
+        }
+      },
+      "additionalProperties": false
+    },
+    "reviewer": {
+      "type": "object",
+      "properties": {
+        "reviewer_type": {
+          "enum": ["automatic", "ai_reviewer", "designer", "player_vote"],
+          "description": "Who/what reviewed this proposal. 'automatic' = passed all constraints with no simulation needed. 'ai_reviewer' = reviewed by a world model AI. 'designer' = manually reviewed by a human designer. 'player_vote' = community voted (for user-generated content)."
+        },
+        "reviewer_id": {
+          "type": "string",
+          "description": "Identifier of the reviewer."
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "review_decision": {
+          "enum": ["approve", "reject", "modify_and_approve", "defer"],
+          "description": "Reviewer's decision."
+        },
+        "review_notes": {
+          "type": "string",
+          "description": "Reviewer's notes explaining the decision."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Review information. Populated when a proposal requires or receives explicit review."
+    },
+    "priority": {
+      "enum": ["low", "normal", "high", "critical"],
+      "default": "normal",
+      "description": "Processing priority. Critical proposals (e.g., portal collapse) skip the simulation queue."
+    },
+    "depends_on": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^PROP_[a-f0-9]{8,}$"
+      },
+      "description": "Proposal IDs that must be committed before this proposal can be applied. Used for ordered dependency chains."
+    },
+    "conflicts_with": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^PROP_[a-f0-9]{8,}$"
+      },
+      "description": "Proposal IDs that conflict with this one (cannot both be committed). Used for mutual exclusion."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "committed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this proposal was committed to the world state. Null if not yet committed."
+    },
+    "ttl_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Time-to-live for this proposal in milliseconds. If not committed or rejected within this window, the proposal expires and is auto-rejected. Prevents stale proposals from clogging the pipeline."
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twin-earth-nyc.game/schemas/ledger-event.schema.json",
+  "title": "Twin Earth NYC Ledger Event",
+  "description": "A ledger event is an immutable record of something significant that happened in the simulation world. Events form a causal chain — they reference observations as evidence, carry heat impacts across four channels, and track whether they have been committed to the persistent world state. The ledger is the single source of truth for what has happened: investigations, AI reasoning, and narrative branching all query it.",
+  "type": "object",
+  "required": [
+    "event_id",
+    "category",
+    "timestamp",
+    "location",
+    "entities_involved",
+    "description",
+    "heat_impact",
+    "committed"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^EVT_[a-f0-9]{8,}$",
+      "description": "Globally unique event identifier. Format: EVT_{hex-hash}. Example: EVT_c4b8e2a1."
+    },
+    "category": {
+      "enum": [
+        "damage",
+        "access",
+        "evidence",
+        "anomaly",
+        "authority_response",
+        "heat_change"
+      ],
+      "description": "Primary event category. 'damage' = physical destruction or harm. 'access' = entry, exit, lock/unlock. 'evidence' = observation created, tampered, or destroyed. 'anomaly' = portal activity, dimensional bleed, physics violation. 'authority_response' = police, EMS, federal response triggered. 'heat_change' = direct heat level manipulation (decay, spike, reset)."
+    },
+    "subcategory": {
+      "type": "string",
+      "description": "Optional finer classification within the category. Examples: 'window_broken', 'door_forced', 'camera_disabled', 'portal_opened', 'witness_intimidated'.",
+      "examples": [
+        "window_broken",
+        "door_forced",
+        "camera_disabled",
+        "portal_opened",
+        "witness_intimidated",
+        "vehicle_collision",
+        "energy_spike_detected"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of when the event occurred in simulation time."
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Duration of the event in milliseconds. Instantaneous events have duration 0."
+    },
+    "location": {
+      "$ref": "#/$defs/vec3",
+      "description": "World-space position where the event occurred."
+    },
+    "region": {
+      "type": "string",
+      "description": "Region where the event occurred. Used for heat channel routing."
+    },
+    "block": {
+      "type": "string",
+      "description": "Block-level location within the region."
+    },
+    "entities_involved": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["entity_id", "role"],
+        "properties": {
+          "entity_id": {
+            "type": "string",
+            "description": "Reference to an entity involved in this event."
+          },
+          "role": {
+            "enum": ["actor", "target", "witness", "instrument", "bystander", "responder"],
+            "description": "Role this entity played. 'actor' = caused the event. 'target' = affected by the event. 'witness' = observed the event. 'instrument' = tool/weapon used. 'bystander' = present but not directly involved. 'responder' = authority responding to the event."
+          },
+          "damage_received": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Normalized damage this entity received (0 = none, 1 = destroyed). Only relevant for targets."
+          }
+        },
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "description": "All entities involved in this event, with their roles."
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Observation ID referencing an observation record that constitutes evidence of this event."
+      },
+      "description": "Observation IDs that serve as evidence for this event. An event with zero observations is unwitnessed — it still happened, but no one recorded it."
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable narrative description of the event. Used for investigation logs, player journals, and AI reasoning context. Example: 'Subject forced rear fire door of 412 W 42nd St, triggering silent alarm on artifact ART_DOORLOCK_MIDTOWN_b7c2.'"
+    },
+    "heat_impact": {
+      "type": "object",
+      "required": ["physical", "social", "institutional", "ecological"],
+      "properties": {
+        "physical": {
+          "type": "number",
+          "description": "Impact on physical heat channel. Positive values raise heat (damage, loud events). Negative values lower it (repairs, cleanup). Typical range: -0.3 to +0.5."
+        },
+        "social": {
+          "type": "number",
+          "description": "Impact on social heat channel. Witnesses, crowd panic, social media spread. Typical range: -0.2 to +0.4."
+        },
+        "institutional": {
+          "type": "number",
+          "description": "Impact on institutional heat channel. Police reports filed, federal attention attracted, legal proceedings triggered. Typical range: -0.1 to +0.5."
+        },
+        "ecological": {
+          "type": "number",
+          "description": "Impact on ecological heat channel. Environmental contamination, dimensional bleed, reality destabilization. Typical range: -0.1 to +0.6."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Heat impact across four orthogonal channels. Each event perturbs the heat state of its region. The heat system aggregates these impacts with decay to determine the current threat level."
+    },
+    "committed": {
+      "type": "boolean",
+      "description": "Whether this event has been committed to the persistent world state. Uncommitted events exist in a pending buffer and can still be rolled back (e.g., during a proposal simulation). Once committed, the event is permanent."
+    },
+    "reversible": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the effects of this event can be undone by a subsequent event. Broken windows can be repaired (reversible=true). A killed NPC cannot be unkilled (reversible=false). This governs rollback feasibility."
+    },
+    "commit_point_trigger": {
+      "type": "string",
+      "description": "Describes the condition that will cause this event to commit if it has not already. Examples: 'authority_observation' (commits when a cop sees the damage), 'time_elapsed_60s' (commits after 60 seconds), 'immediate' (commits on creation).",
+      "examples": [
+        "immediate",
+        "authority_observation",
+        "time_elapsed_60s",
+        "time_elapsed_300s",
+        "evidence_corroborated",
+        "player_leaves_region"
+      ]
+    },
+    "parent_event_id": {
+      "type": "string",
+      "pattern": "^EVT_[a-f0-9]{8,}$",
+      "description": "Optional reference to a parent event that caused this one, forming a causal chain. Example: a 'damage' event (breaking a window) may spawn an 'authority_response' event (police dispatch) as a child."
+    },
+    "child_event_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^EVT_[a-f0-9]{8,}$"
+      },
+      "description": "Events that were directly caused by this event. Populated after children are created."
+    },
+    "severity": {
+      "enum": ["trivial", "minor", "moderate", "major", "catastrophic"],
+      "description": "Severity classification for triage and response scaling. 'trivial' = jaywalking. 'minor' = broken window. 'moderate' = vehicle collision. 'major' = building fire. 'catastrophic' = portal breach / mass casualty."
+    },
+    "visibility": {
+      "enum": ["hidden", "subtle", "visible", "obvious", "broadcast"],
+      "description": "How visible this event is to nearby NPCs and systems. 'hidden' = no one noticed. 'subtle' = only attentive observers. 'visible' = anyone nearby. 'obvious' = hard to miss in the block. 'broadcast' = city-wide awareness (news, radio)."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "description": "Freeform tags for query filtering. Examples: ['player_caused', 'portal_related', 'quest_critical', 'collateral']."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "System timestamp when this event record was created."
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vec3": {
+      "type": "object",
+      "title": "Vector3",
+      "description": "3D vector in meters.",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

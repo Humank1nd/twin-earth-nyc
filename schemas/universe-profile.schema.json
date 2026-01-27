@@ -1,0 +1,589 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twin-earth-nyc.game/schemas/universe-profile.schema.json",
+  "title": "Twin Earth NYC Universe Profile",
+  "description": "A universe profile defines the complete rule set for an alternate universe accessible through portals. It encapsulates five orthogonal sub-profiles: physics (how matter and energy behave), cognition (how minds and perception work), law (how authority and governance function), aesthetic (how the universe looks and sounds), and persistence (how changes are tracked and exported). Every portal references a universe profile; the profile governs what happens to entities and players who transit into that universe, and what bleeds back through entropy zones.",
+  "type": "object",
+  "required": [
+    "universe_id",
+    "universe_name",
+    "physics_profile",
+    "cognition_profile",
+    "law_profile",
+    "aesthetic_profile",
+    "persistence_contract"
+  ],
+  "properties": {
+    "universe_id": {
+      "type": "string",
+      "pattern": "^UNI_[A-Z0-9_]+$",
+      "description": "Unique universe identifier. Format: UNI_{DESCRIPTOR}. Examples: UNI_NOIR_MANHATTAN, UNI_OVERGROWN_BRONX, UNI_CLOCKWORK_QUEENS, UNI_BASELINE."
+    },
+    "universe_name": {
+      "type": "string",
+      "description": "Human-readable display name. Example: 'Noir Manhattan', 'The Overgrown Bronx', 'Clockwork Queens'."
+    },
+    "universe_description": {
+      "type": "string",
+      "description": "Narrative description of this universe for world-building context and player briefings."
+    },
+    "divergence_point": {
+      "type": "string",
+      "description": "Historical moment where this universe diverged from the baseline. Example: 'Nikola Tesla's 1899 Colorado Springs experiment succeeded in opening a stable dimensional rift.'"
+    },
+    "threat_level": {
+      "enum": ["safe", "caution", "dangerous", "hostile", "incompatible"],
+      "description": "Baseline threat classification for entities from the base universe. 'safe' = physics and cognition compatible, no inherent danger. 'hostile' = actively harmful environment. 'incompatible' = baseline biology cannot survive without equipment."
+    },
+    "physics_profile": {
+      "type": "object",
+      "description": "Defines how physics operates in this universe. Deviations from baseline affect combat, traversal, portal stability, and artifact behavior.",
+      "required": ["gravity", "speed_of_light", "energy_conservation"],
+      "properties": {
+        "gravity": {
+          "type": "object",
+          "required": ["magnitude", "direction"],
+          "properties": {
+            "magnitude": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Gravitational acceleration in m/s^2. Baseline Earth = 9.81."
+            },
+            "direction": {
+              "$ref": "#/$defs/vec3",
+              "description": "Gravity direction vector. Baseline = (0, -1, 0). Exotic universes may have lateral or inverted gravity."
+            },
+            "variable": {
+              "type": "boolean",
+              "default": false,
+              "description": "If true, gravity magnitude and/or direction fluctuate over time or by location."
+            },
+            "variation_pattern": {
+              "type": "string",
+              "description": "Description of gravity variation if variable=true. Example: 'sinusoidal, period 60s, amplitude +/-2 m/s^2'."
+            }
+          },
+          "additionalProperties": false
+        },
+        "speed_of_light": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Speed of light in m/s. Baseline = 299792458. Altered values affect electromagnetic behavior, sensor ranges, and visual rendering."
+        },
+        "material_overrides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["base_material", "override_material"],
+            "properties": {
+              "base_material": {
+                "type": "string",
+                "description": "Material name in the base universe."
+              },
+              "override_material": {
+                "type": "string",
+                "description": "What this material becomes in the target universe."
+              },
+              "property_changes": {
+                "type": "object",
+                "properties": {
+                  "density_mult": { "type": "number", "description": "Density multiplier relative to baseline." },
+                  "hardness_mult": { "type": "number", "description": "Hardness multiplier." },
+                  "conductivity_mult": { "type": "number", "description": "Electrical/thermal conductivity multiplier." },
+                  "flammability_mult": { "type": "number", "description": "Flammability multiplier." },
+                  "transparency_mult": { "type": "number", "description": "Optical transparency multiplier." }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Material transmutation rules. When a baseline material enters this universe (or its bleed zone), it transforms. Example: steel becomes brittle glass in the Overgrown Bronx."
+        },
+        "energy_conservation": {
+          "type": "boolean",
+          "description": "Whether energy is conserved in this universe. If false, exotic energy generation or dissipation is possible — critical for gameplay balance."
+        },
+        "special_rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["rule_name", "description", "effect"],
+            "properties": {
+              "rule_name": {
+                "type": "string",
+                "description": "Short identifier for the rule."
+              },
+              "description": {
+                "type": "string",
+                "description": "Human-readable explanation of the physics rule."
+              },
+              "effect": {
+                "type": "string",
+                "description": "Mechanical effect description for the game engine. Example: 'projectile_velocity_halved', 'fire_does_not_spread', 'sound_propagation_doubled'."
+              },
+              "scope": {
+                "enum": ["global", "zone", "entity_class"],
+                "description": "Whether the rule applies everywhere, in specific zones, or only to certain entity types."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Special physics rules unique to this universe that don't fit the standard parameters."
+        },
+        "time_flow_rate": {
+          "type": "number",
+          "minimum": 0,
+          "default": 1.0,
+          "description": "Time flow rate relative to baseline. 1.0 = normal. 0.5 = half speed. 2.0 = double speed. Affects NPC behavior, decay rates, and portal stability calculations."
+        }
+      },
+      "additionalProperties": false
+    },
+    "cognition_profile": {
+      "type": "object",
+      "description": "Defines how minds, perception, and communication work in this universe. Affects NPC behavior, witness reliability, and player sensory feedback.",
+      "required": ["awareness_level", "memory_model", "communication"],
+      "properties": {
+        "awareness_level": {
+          "enum": ["oblivious", "baseline", "heightened", "omniscient", "fragmented"],
+          "description": "'oblivious' = NPCs ignore anomalies and portal activity. 'baseline' = normal human awareness. 'heightened' = NPCs are unusually perceptive, harder to avoid detection. 'omniscient' = NPCs share knowledge instantly (hive-mind). 'fragmented' = NPCs have impaired cognition, unreliable perception."
+        },
+        "memory_model": {
+          "enum": ["persistent", "short_term_only", "perfect_recall", "decaying", "shared", "overwritten"],
+          "description": "How NPC memory works. 'persistent' = normal long-term memory. 'short_term_only' = NPCs forget events after minutes. 'perfect_recall' = NPCs never forget anything. 'decaying' = memories degrade over time with distortion. 'shared' = all NPCs share a collective memory. 'overwritten' = new experiences replace old ones."
+        },
+        "communication": {
+          "type": "object",
+          "properties": {
+            "primary_mode": {
+              "enum": ["verbal", "telepathic", "gestural", "pheromonal", "electromagnetic", "none"],
+              "description": "Primary communication mode of native entities."
+            },
+            "language_compatible": {
+              "type": "boolean",
+              "description": "Whether baseline language is understood by native entities."
+            },
+            "deception_detection": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Native entities' baseline ability to detect lies. 0 = no ability, 1 = perfect lie detection."
+            }
+          },
+          "additionalProperties": false
+        },
+        "stress_response": {
+          "type": "object",
+          "properties": {
+            "panic_threshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Stress level at which NPCs enter panic behavior. Lower = more skittish."
+            },
+            "aggression_baseline": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Baseline aggression level of native NPCs. 0 = pacifist, 1 = immediately hostile."
+            },
+            "fight_vs_flight": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Tendency toward fight (1.0) vs flight (0.0) when stressed."
+            },
+            "herd_behavior": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Tendency for NPCs to mimic nearby NPCs' stress responses. 0 = independent, 1 = total herd mentality."
+            }
+          },
+          "additionalProperties": false
+        },
+        "perception_modifiers": {
+          "type": "object",
+          "properties": {
+            "visual_range_mult": { "type": "number", "minimum": 0, "description": "Visual perception range multiplier." },
+            "audio_range_mult": { "type": "number", "minimum": 0, "description": "Audio perception range multiplier." },
+            "anomaly_sensitivity": { "type": "number", "minimum": 0, "maximum": 1, "description": "How sensitive natives are to dimensional anomalies. 0 = oblivious, 1 = instantly aware." }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "law_profile": {
+      "type": "object",
+      "description": "Defines the legal and authority structure of this universe. Governs how NPCs enforce rules, how the player is treated, and what happens when laws are broken.",
+      "required": ["authority_structure", "enforcement_level"],
+      "properties": {
+        "authority_structure": {
+          "enum": ["democratic", "authoritarian", "feudal", "corporate", "tribal", "theocratic", "anarchic", "ai_governed", "absent"],
+          "description": "Form of governance. Determines response hierarchies, escalation paths, and corruption potential."
+        },
+        "enforcement_level": {
+          "enum": ["none", "minimal", "standard", "strict", "totalitarian"],
+          "description": "'none' = no law enforcement exists. 'minimal' = rare patrols, slow response. 'standard' = baseline NYC-equivalent. 'strict' = heavy police presence, fast response. 'totalitarian' = omnipresent surveillance, instant response, severe penalties."
+        },
+        "portal_legal_status": {
+          "enum": ["unknown", "legal", "regulated", "restricted", "prohibited", "worshipped"],
+          "description": "How the native legal system classifies portal activity. 'unknown' = natives don't know what portals are. 'regulated' = legal with permits. 'prohibited' = criminal activity. 'worshipped' = portals are sacred."
+        },
+        "player_legal_standing": {
+          "enum": ["citizen", "visitor", "alien", "criminal", "diplomatic_immunity", "unknown_entity"],
+          "description": "Default legal classification of a player entering this universe. Determines baseline NPC reactions and available interactions."
+        },
+        "crimes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["offense", "severity", "response"],
+            "properties": {
+              "offense": {
+                "type": "string",
+                "description": "Name of the offense. Example: 'unauthorized_portal_use', 'property_damage', 'trespassing'."
+              },
+              "severity": {
+                "enum": ["infraction", "misdemeanor", "felony", "capital"],
+                "description": "Severity classification."
+              },
+              "response": {
+                "type": "string",
+                "description": "Standard enforcement response. Example: 'verbal_warning', 'pursuit_and_detain', 'lethal_force_authorized'."
+              },
+              "heat_multiplier": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Multiplier applied to institutional heat when this crime is detected."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Catalogue of offenses recognized in this universe and their consequences."
+        },
+        "corruption_index": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "How corrupt the authority structure is. 0 = incorruptible. 1 = completely corrupt. Affects bribery success, evidence tampering, and authority reliability."
+        }
+      },
+      "additionalProperties": false
+    },
+    "aesthetic_profile": {
+      "type": "object",
+      "description": "Defines the visual, auditory, and atmospheric presentation of this universe. Drives rendering, post-processing, audio mixing, and environmental art direction.",
+      "required": ["visual_style", "color_palette", "lighting_model"],
+      "properties": {
+        "visual_style": {
+          "type": "string",
+          "description": "Art direction shorthand. Examples: 'noir_monochrome', 'biopunk_overgrown', 'art_deco_brass', 'brutalist_concrete', 'neon_cyberpunk', 'watercolor_dreamlike'.",
+          "examples": ["noir_monochrome", "biopunk_overgrown", "art_deco_brass", "brutalist_concrete", "neon_cyberpunk", "watercolor_dreamlike"]
+        },
+        "color_palette": {
+          "type": "object",
+          "properties": {
+            "primary": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "description": "Primary color as hex. Dominates large surfaces and sky."
+            },
+            "secondary": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "description": "Secondary color. Accents and mid-tones."
+            },
+            "accent": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "description": "Accent color. Highlights, UI elements, important objects."
+            },
+            "shadow": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "description": "Shadow/dark tone color."
+            },
+            "saturation_mult": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Global saturation multiplier. 0 = fully desaturated (noir). 1 = baseline. >1 = oversaturated."
+            },
+            "contrast_mult": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Global contrast multiplier."
+            }
+          },
+          "additionalProperties": false
+        },
+        "architecture": {
+          "type": "object",
+          "properties": {
+            "style": {
+              "type": "string",
+              "description": "Dominant architectural style. Examples: 'art_deco', 'brutalist', 'organic_grown', 'victorian_industrial', 'crystalline'."
+            },
+            "condition": {
+              "enum": ["pristine", "maintained", "worn", "decaying", "ruined", "overgrown", "alien"],
+              "description": "General condition of built structures."
+            },
+            "scale_mult": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Scale multiplier for buildings relative to baseline NYC. 1.0 = normal. 2.0 = everything is twice as tall."
+            },
+            "signature_elements": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Distinctive architectural elements. Examples: ['brass_gears', 'vine_covered_facades', 'floating_walkways', 'neon_signage']."
+            }
+          },
+          "additionalProperties": false
+        },
+        "lighting_model": {
+          "type": "object",
+          "properties": {
+            "sun_color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "description": "Color of the primary light source (sun equivalent)."
+            },
+            "sun_intensity": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Intensity multiplier for primary light. 1.0 = baseline daylight."
+            },
+            "ambient_color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "description": "Ambient/fill light color."
+            },
+            "ambient_intensity": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Ambient light intensity. 0 = pitch black shadows. 1.0 = baseline."
+            },
+            "fog_density": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Atmospheric fog/haze density. 0 = clear. 1 = zero visibility."
+            },
+            "fog_color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "day_night_cycle": {
+              "type": "boolean",
+              "description": "Whether this universe has a day/night cycle."
+            },
+            "perpetual_time": {
+              "enum": ["dawn", "morning", "noon", "afternoon", "golden_hour", "dusk", "twilight", "night", "variable"],
+              "description": "If day_night_cycle is false, the fixed time-of-day. 'variable' means it changes but not on a standard cycle."
+            }
+          },
+          "additionalProperties": false
+        },
+        "audio_signature": {
+          "type": "object",
+          "properties": {
+            "ambient_loop": {
+              "type": "string",
+              "description": "Asset reference for the universe's ambient audio loop."
+            },
+            "reverb_profile": {
+              "enum": ["dry", "small_room", "large_hall", "cathedral", "outdoor", "underwater", "metallic", "organic"],
+              "description": "Default reverb preset for this universe's environments."
+            },
+            "pitch_shift": {
+              "type": "number",
+              "description": "Global pitch shift in semitones for all sounds. 0 = normal. Negative = lower. Positive = higher."
+            },
+            "distortion_level": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Global audio distortion. 0 = clean. 1 = heavily distorted."
+            },
+            "signature_sounds": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Distinctive sounds that define this universe. Examples: ['ticking_gears', 'distant_thunder', 'whale_song', 'static_crackle']."
+            }
+          },
+          "additionalProperties": false
+        },
+        "post_processing": {
+          "type": "object",
+          "properties": {
+            "bloom_intensity": { "type": "number", "minimum": 0 },
+            "chromatic_aberration": { "type": "number", "minimum": 0, "maximum": 1 },
+            "film_grain": { "type": "number", "minimum": 0, "maximum": 1 },
+            "vignette": { "type": "number", "minimum": 0, "maximum": 1 },
+            "color_grading_lut": { "type": "string", "description": "Asset reference for color grading LUT." }
+          },
+          "additionalProperties": false,
+          "description": "Post-processing effect parameters for visual rendering."
+        }
+      },
+      "additionalProperties": false
+    },
+    "persistence_contract": {
+      "type": "object",
+      "description": "Defines what persists, what generates evidence, and what can be exported when entities return from this universe. This is the gameplay-critical contract that determines consequences of player actions in alternate universes.",
+      "required": [
+        "damage_persistence",
+        "evidence_generation",
+        "npc_memory",
+        "environmental_changes",
+        "loot_export"
+      ],
+      "properties": {
+        "damage_persistence": {
+          "type": "object",
+          "required": ["mode"],
+          "properties": {
+            "mode": {
+              "enum": ["full", "partial", "session_only", "none", "escalating"],
+              "description": "'full' = all damage persists permanently. 'partial' = damage decays over time. 'session_only' = resets between sessions. 'none' = damage is instantly repaired. 'escalating' = repeated damage accumulates and becomes harder to repair."
+            },
+            "decay_rate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Rate at which damage decays per hour. Only relevant for 'partial' mode."
+            },
+            "repair_cost_mult": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Cost multiplier for repairing damage in this universe relative to baseline."
+            }
+          },
+          "additionalProperties": false
+        },
+        "evidence_generation": {
+          "type": "object",
+          "required": ["rate"],
+          "properties": {
+            "rate": {
+              "enum": ["none", "low", "standard", "high", "total_surveillance"],
+              "description": "How aggressively the universe generates evidence of player actions. 'none' = no evidence trail. 'total_surveillance' = every action is logged."
+            },
+            "evidence_types": {
+              "type": "array",
+              "items": {
+                "enum": ["visual", "audio", "digital_log", "witness_testimony", "forensic", "dimensional_trace"]
+              },
+              "description": "Types of evidence this universe can generate."
+            },
+            "cross_universe_leakage": {
+              "type": "boolean",
+              "description": "Whether evidence generated here can leak back to the base universe through portal entropy."
+            }
+          },
+          "additionalProperties": false
+        },
+        "npc_memory": {
+          "type": "object",
+          "required": ["retention"],
+          "properties": {
+            "retention": {
+              "enum": ["none", "session", "persistent", "perfect", "collective"],
+              "description": "How long NPCs remember player actions. 'none' = instant amnesia. 'collective' = all NPCs share memories."
+            },
+            "hostility_persistence": {
+              "type": "boolean",
+              "description": "Whether NPC hostility toward the player persists across visits."
+            },
+            "reputation_system": {
+              "type": "boolean",
+              "description": "Whether this universe tracks player reputation with native factions."
+            }
+          },
+          "additionalProperties": false
+        },
+        "environmental_changes": {
+          "type": "object",
+          "required": ["mode"],
+          "properties": {
+            "mode": {
+              "enum": ["static", "dynamic_resetting", "dynamic_persistent", "evolving"],
+              "description": "'static' = environment never changes. 'dynamic_resetting' = changes occur but reset between visits. 'dynamic_persistent' = changes are permanent. 'evolving' = environment changes on its own between visits based on simulation."
+            },
+            "player_impact_weight": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "How much player actions influence environmental evolution. 0 = no influence, 1 = player is primary driver."
+            }
+          },
+          "additionalProperties": false
+        },
+        "loot_export": {
+          "type": "object",
+          "required": ["allowed"],
+          "properties": {
+            "allowed": {
+              "type": "boolean",
+              "description": "Whether items and materials can be brought back to the base universe through portals."
+            },
+            "export_categories": {
+              "type": "array",
+              "items": {
+                "enum": ["weapons", "tools", "materials", "currency", "data", "biological", "artifacts", "technology"]
+              },
+              "description": "Categories of items that can be exported."
+            },
+            "transformation_on_export": {
+              "type": "boolean",
+              "description": "Whether exported items transform when crossing back to baseline physics. Example: a magic sword becomes inert metal."
+            },
+            "mass_limit_kg": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Maximum mass in kg that can be exported per portal transit."
+            },
+            "contraband_items": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Specific item types that are blocked from export regardless of category permissions."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "compatibility_notes": {
+      "type": "string",
+      "description": "Freeform notes about cross-universe compatibility issues, known bugs in physics translation, or designer intent for this universe's role in the game."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of this profile. Profiles can be updated as the game evolves.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vec3": {
+      "type": "object",
+      "title": "Vector3",
+      "description": "3D vector.",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

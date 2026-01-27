@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twin-earth-nyc.game/schemas/portal.schema.json",
+  "title": "Twin Earth NYC Portal",
+  "description": "A portal is a dimensional gateway connecting Twin Earth NYC (the base universe) to an alternate universe. Portals have a lifecycle (latent -> forming -> stable -> unstable -> collapsing -> sealed), carry bandwidth limits for mass transfer, bleed entropy into their surroundings, and reference a universe profile that defines the rules of the destination reality. Portals are the central mechanic of the multiverse system: operations require them, anomalies spawn around them, and the ecological heat channel tracks their cumulative impact.",
+  "type": "object",
+  "required": [
+    "portal_id",
+    "state",
+    "stability",
+    "bandwidth",
+    "position",
+    "target_universe_id",
+    "created_at"
+  ],
+  "properties": {
+    "portal_id": {
+      "type": "string",
+      "pattern": "^PRT_[A-Z0-9]+_[a-f0-9]{4,}$",
+      "description": "Globally unique portal identifier. Format: PRT_{REGION}_{hex-hash}. Example: PRT_HARLEM_c0de42."
+    },
+    "state": {
+      "enum": ["latent", "forming", "stable", "unstable", "collapsing", "sealed"],
+      "description": "Current lifecycle state. 'latent' = potential site, not yet manifested (detectable only by sensitive instruments). 'forming' = energy coalescing, visual/audio distortions beginning. 'stable' = fully operational, safe(ish) transit. 'unstable' = fluctuating, transit risky, entropy bleed increasing. 'collapsing' = closing rapidly, last-chance transit window. 'sealed' = permanently closed, site may retain residual energy."
+    },
+    "stability": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Current stability factor. 1.0 = perfectly stable (theoretical max). 0.0 = collapsed. Stability decays over time and degrades faster under load (mass transit) or environmental stress (nearby damage, authority interference). Below 0.3, the portal enters 'unstable' state. Below 0.1, it enters 'collapsing'."
+    },
+    "bandwidth": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Maximum sustained mass transfer rate in kilograms per second. Determines how quickly people and objects can transit. A standard human (~80kg) through a 50 kg/s portal takes ~1.6 seconds. Exceeding bandwidth degrades stability."
+    },
+    "current_throughput": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Current mass transfer rate in kg/s. Must not exceed bandwidth for safe operation."
+    },
+    "anchor_entity_id": {
+      "type": "string",
+      "description": "Entity ID of the physical anchor point for this portal — typically a landmark, artifact, or placed device that stabilizes the dimensional interface. If the anchor is destroyed, the portal destabilizes rapidly."
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{16,64}$",
+      "description": "Dimensional signature hash — a unique fingerprint identifying this portal's frequency, resonance pattern, and target universe. Used for detection, tracking, and matching by portal-sensing equipment."
+    },
+    "entropy_bleed": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Radius in meters of the entropy bleed zone around the portal. Within this radius, reality is locally distorted: physics may behave according to the target universe's rules, materials may transmute, NPC cognition may be altered. Larger bleed = more ecological heat. Typical range: 5-200 meters."
+    },
+    "entropy_effects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["effect_type", "intensity"],
+        "properties": {
+          "effect_type": {
+            "enum": [
+              "gravity_distortion",
+              "material_transmutation",
+              "time_dilation",
+              "cognitive_interference",
+              "visual_bleed",
+              "audio_bleed",
+              "physics_rule_leak",
+              "flora_mutation",
+              "electromagnetic_disruption"
+            ],
+            "description": "Type of entropy effect manifesting in the bleed zone."
+          },
+          "intensity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Intensity of the effect. 0 = negligible, 1 = full target-universe rules apply."
+          },
+          "radius_m": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Effective radius of this specific effect in meters. May be less than the overall entropy_bleed."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Specific entropy effects active in the bleed zone. Multiple effects can overlap."
+    },
+    "position": {
+      "$ref": "#/$defs/vec3",
+      "description": "World-space position of the portal center point."
+    },
+    "orientation": {
+      "$ref": "#/$defs/quat",
+      "description": "Orientation of the portal surface. The portal face is perpendicular to the local forward vector."
+    },
+    "dimensions": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Width of the portal aperture in meters."
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Height of the portal aperture in meters."
+        },
+        "shape": {
+          "enum": ["elliptical", "rectangular", "irregular", "spherical"],
+          "description": "Shape of the portal aperture."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Physical dimensions of the portal aperture."
+    },
+    "target_universe_id": {
+      "type": "string",
+      "pattern": "^UNI_[A-Z0-9_]+$",
+      "description": "Identifier of the destination universe. Example: UNI_NOIR_MANHATTAN, UNI_OVERGROWN_BRONX, UNI_CLOCKWORK_QUEENS."
+    },
+    "universe_profile_ref": {
+      "type": "string",
+      "format": "uri",
+      "description": "URI reference to the full universe profile document that describes the target universe's physics, cognition, law, aesthetic, and persistence rules. Example: 'schema://universe-profiles/UNI_NOIR_MANHATTAN.json'."
+    },
+    "transit_log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["entity_id", "direction", "timestamp", "mass_kg"],
+        "properties": {
+          "entity_id": { "type": "string" },
+          "direction": {
+            "enum": ["inbound", "outbound"],
+            "description": "'inbound' = entering from target universe to base. 'outbound' = leaving base for target universe."
+          },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "mass_kg": { "type": "number", "minimum": 0 },
+          "stability_cost": {
+            "type": "number",
+            "description": "Stability points consumed by this transit."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Log of all entities that have transited through this portal."
+    },
+    "access_control": {
+      "type": "object",
+      "properties": {
+        "requires_key": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether transit requires a specific artifact or key item."
+        },
+        "key_artifact_id": {
+          "type": "string",
+          "description": "Artifact ID of the required key, if any."
+        },
+        "faction_whitelist": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Factions permitted to transit. Empty = unrestricted."
+        },
+        "one_way": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, the portal only permits transit in one direction (outbound from base)."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Access control rules for this portal."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp when this portal first manifested (entered 'latent' state)."
+    },
+    "last_state_change": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of the most recent state transition."
+    },
+    "estimated_collapse_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Predicted timestamp of portal collapse based on current stability decay rate. Null if decay rate is zero or portal is already sealed."
+    },
+    "transition_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from_state", "to_state", "trigger", "timestamp"],
+        "properties": {
+          "from_state": {
+            "enum": ["latent", "forming", "stable", "unstable", "collapsing", "sealed"],
+            "description": "State before the transition."
+          },
+          "to_state": {
+            "enum": ["latent", "forming", "stable", "unstable", "collapsing", "sealed"],
+            "description": "State after the transition."
+          },
+          "trigger": {
+            "type": "string",
+            "description": "What caused the state change. Examples: 'natural_decay', 'overloaded_bandwidth', 'anchor_destroyed', 'player_stabilization_device', 'authority_containment', 'energy_surge'.",
+            "examples": [
+              "natural_decay",
+              "overloaded_bandwidth",
+              "anchor_destroyed",
+              "player_stabilization_device",
+              "authority_containment",
+              "energy_surge",
+              "ritual_activation"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the transition occurred."
+          },
+          "stability_at_transition": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Stability value at the moment of transition."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Complete history of state transitions for this portal."
+    },
+    "detection_difficulty": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "How difficult it is for sensors and NPCs to detect this portal. 0 = impossible to miss (massive visible rift). 1 = requires specialized equipment and active scanning. Latent portals are typically 0.9+."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "description": "Freeform tags. Examples: ['player_created', 'natural', 'quest_critical', 'federal_monitored']."
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vec3": {
+      "type": "object",
+      "title": "Vector3",
+      "description": "3D vector in meters.",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "quat": {
+      "type": "object",
+      "title": "Quaternion",
+      "description": "Unit quaternion for rotation.",
+      "required": ["x", "y", "z", "w"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" },
+        "w": { "type": "number" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
