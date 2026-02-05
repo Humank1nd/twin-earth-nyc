@@ -41,6 +41,22 @@ These are simulation parameters that AlphaEvolve may modify within defined bound
 | 9 | **Billboard Activation Distances** | `billboard.activation_distance` | Emissive on: 50-300m, Animation on: 20-150m, Full resolution: 10-80m | 200/100/40 | At what distance billboards switch from static to animated to full-resolution emissive content. Affects GPU load. |
 | 10 | **Weather Effect Intensities** | `weather.effect_intensity` | Particle density: 0.1-1.0, Surface wetness: 0.0-1.0, Fog density: 0.0-0.5, Wind strength: 0.0-1.0 | 0.7/0.8/0.1/0.3 | Visual intensity of weather effects. Higher = more immersive but more expensive. |
 
+### 2.2 Evolvables Registry (Technique Mapping)
+
+Quick reference for which optimization technique best fits each evolvable target and the primary metric to score.
+
+| Component | Technique | Primary Metric |
+|---|---|---|
+| LOD Thresholds | CMA-ES / GA | Frame time stability (p95) |
+| Crowd Parameters | ES | Deadlock rate < 5% |
+| Traffic Signal Timing | GA | Intersection throughput |
+| Anomaly Propagation | ES | Containment success > 0.8 |
+| Heat Decay Constants | Bayesian Opt | Heat return-to-baseline time |
+
+Prototype tools (non-canonical):
+- `scripts/alphaevolve_es_prototype.py` — minimal ES loop for crowd tuning.
+- `scripts/alphaevolve_cli_wrapper.py` — ES runner with external metric providers + fitness ledger output.
+
 #### Parameter Genome
 
 Each generation of AlphaEvolve produces a **genome** — a complete set of all evolvable parameters:

@@ -1,0 +1,36 @@
+{
+    "scenario_id": "sim-0d6a40a30fd8",
+    "name": "proof-test",
+    "description": "Status proof pack test",
+    "scenario_type": "strain_spike",
+    "parameters": {
+        "target_phase": null,
+        "strain_delta": 0.0,
+        "strain_target": 0.0,
+        "duration_cycles": 1,
+        "ramp_up_phases": 0,
+        "resource_type": null,
+        "resource_delta": 0.0,
+        "config_key": null,
+        "config_value": null,
+        "custom_params": {}
+    },
+    "initial_strain": {
+        "wisdom_strain": 0.0,
+        "fate_strain": 0.0,
+        "chaos_strain": 0.0,
+        "tide_strain": 0.0,
+        "place_strain": 0.0,
+        "watch_strain": 0.0,
+        "total_strain": 0.0,
+        "average_strain": 0.0,
+        "is_critical": false
+    },
+    "initial_phase": "odins_eye",
+    "initial_cycle": 0,
+    "created_by": "user",
+    "created_at": "2026-01-27T21:09:53.320884+00:00",
+    "tags": [],
+    "is_template": false,
+    "run_count": 0
+}

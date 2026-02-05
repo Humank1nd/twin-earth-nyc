@@ -1,0 +1,39 @@
+{
+    "total_skalds": 108,
+    "active_skalds": 108,
+    "total_invocations": 0,
+    "total_sessions": 0,
+    "by_clan": {
+        "gungnir": {
+            "total": 18,
+            "active": 18,
+            "invocations": 0
+        },
+        "friggs_distaff": {
+            "total": 18,
+            "active": 18,
+            "invocations": 0
+        },
+        "gleipnir": {
+            "total": 18,
+            "active": 18,
+            "invocations": 0
+        },
+        "skidbladnir": {
+            "total": 18,
+            "active": 18,
+            "invocations": 0
+        },
+        "gjallarhorn": {
+            "total": 18,
+            "active": 18,
+            "invocations": 0
+        },
+        "bifrost": {
+            "total": 18,
+            "active": 18,
+            "invocations": 0
+        }
+    },
+    "initialized": true
+}

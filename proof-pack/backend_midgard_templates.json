@@ -1,0 +1,205 @@
+{
+    "total": 5,
+    "templates": [
+        {
+            "scenario_id": "tmpl-strain-spike-wisdom",
+            "name": "Wisdom Strain Spike",
+            "description": "Simulate a sudden spike in wisdom strain (Odin's Eye overload)",
+            "scenario_type": "strain_spike",
+            "parameters": {
+                "target_phase": "odins_eye",
+                "strain_delta": 0.4,
+                "strain_target": 0.0,
+                "duration_cycles": 2,
+                "ramp_up_phases": 0,
+                "resource_type": null,
+                "resource_delta": 0.0,
+                "config_key": null,
+                "config_value": null,
+                "custom_params": {}
+            },
+            "initial_strain": {
+                "wisdom_strain": 0.0,
+                "fate_strain": 0.0,
+                "chaos_strain": 0.0,
+                "tide_strain": 0.0,
+                "place_strain": 0.0,
+                "watch_strain": 0.0,
+                "total_strain": 0.0,
+                "average_strain": 0.0,
+                "is_critical": false
+            },
+            "initial_phase": "odins_eye",
+            "initial_cycle": 0,
+            "created_by": "system",
+            "created_at": "2026-01-27T21:07:05.834270+00:00",
+            "tags": [
+                "stress-test",
+                "strain",
+                "research"
+            ],
+            "is_template": true,
+            "run_count": 0
+        },
+        {
+            "scenario_id": "tmpl-cascade-failure",
+            "name": "Cascade Failure Test",
+            "description": "Simulate cascading failures across multiple phases",
+            "scenario_type": "cascade_failure",
+            "parameters": {
+                "target_phase": null,
+                "strain_delta": 0.3,
+                "strain_target": 0.0,
+                "duration_cycles": 3,
+                "ramp_up_phases": 2,
+                "resource_type": null,
+                "resource_delta": 0.0,
+                "config_key": null,
+                "config_value": null,
+                "custom_params": {}
+            },
+            "initial_strain": {
+                "wisdom_strain": 0.0,
+                "fate_strain": 0.0,
+                "chaos_strain": 0.0,
+                "tide_strain": 0.0,
+                "place_strain": 0.0,
+                "watch_strain": 0.0,
+                "total_strain": 0.0,
+                "average_strain": 0.0,
+                "is_critical": false
+            },
+            "initial_phase": "odins_eye",
+            "initial_cycle": 0,
+            "created_by": "system",
+            "created_at": "2026-01-27T21:07:05.834283+00:00",
+            "tags": [
+                "failure",
+                "resilience",
+                "critical"
+            ],
+            "is_template": true,
+            "run_count": 0
+        },
+        {
+            "scenario_id": "tmpl-growth-10x",
+            "name": "10x Growth Projection",
+            "description": "Project system behavior under 10x load increase",
+            "scenario_type": "growth_projection",
+            "parameters": {
+                "target_phase": null,
+                "strain_delta": 0.0,
+                "strain_target": 0.0,
+                "duration_cycles": 5,
+                "ramp_up_phases": 0,
+                "resource_type": "load",
+                "resource_delta": 10.0,
+                "config_key": null,
+                "config_value": null,
+                "custom_params": {}
+            },
+            "initial_strain": {
+                "wisdom_strain": 0.0,
+                "fate_strain": 0.0,
+                "chaos_strain": 0.0,
+                "tide_strain": 0.0,
+                "place_strain": 0.0,
+                "watch_strain": 0.0,
+                "total_strain": 0.0,
+                "average_strain": 0.0,
+                "is_critical": false
+            },
+            "initial_phase": "odins_eye",
+            "initial_cycle": 0,
+            "created_by": "system",
+            "created_at": "2026-01-27T21:07:05.834286+00:00",
+            "tags": [
+                "growth",
+                "capacity",
+                "planning"
+            ],
+            "is_template": true,
+            "run_count": 0
+        },
+        {
+            "scenario_id": "tmpl-recovery",
+            "name": "Recovery Test",
+            "description": "Test system recovery from critical strain levels",
+            "scenario_type": "recovery_test",
+            "parameters": {
+                "target_phase": null,
+                "strain_delta": 0.0,
+                "strain_target": 0.9,
+                "duration_cycles": 4,
+                "ramp_up_phases": 0,
+                "resource_type": null,
+                "resource_delta": 0.0,
+                "config_key": null,
+                "config_value": null,
+                "custom_params": {}
+            },
+            "initial_strain": {
+                "wisdom_strain": 0.0,
+                "fate_strain": 0.0,
+                "chaos_strain": 0.0,
+                "tide_strain": 0.0,
+                "place_strain": 0.0,
+                "watch_strain": 0.0,
+                "total_strain": 0.0,
+                "average_strain": 0.0,
+                "is_critical": false
+            },
+            "initial_phase": "odins_eye",
+            "initial_cycle": 0,
+            "created_by": "system",
+            "created_at": "2026-01-27T21:07:05.834289+00:00",
+            "tags": [
+                "recovery",
+                "resilience",
+                "critical"
+            ],
+            "is_template": true,
+            "run_count": 0
+        },
+        {
+            "scenario_id": "tmpl-gate-threshold",
+            "name": "Gate Threshold Adjustment",
+            "description": "Test impact of changing crystallization gate thresholds",
+            "scenario_type": "gate_modification",
+            "parameters": {
+                "target_phase": null,
+                "strain_delta": 0.0,
+                "strain_target": 0.0,
+                "duration_cycles": 3,
+                "ramp_up_phases": 0,
+                "resource_type": null,
+                "resource_delta": 0.0,
+                "config_key": "min_confidence",
+                "config_value": 0.8,
+                "custom_params": {}
+            },
+            "initial_strain": {
+                "wisdom_strain": 0.0,
+                "fate_strain": 0.0,
+                "chaos_strain": 0.0,
+                "tide_strain": 0.0,
+                "place_strain": 0.0,
+                "watch_strain": 0.0,
+                "total_strain": 0.0,
+                "average_strain": 0.0,
+                "is_critical": false
+            },
+            "initial_phase": "odins_eye",
+            "initial_cycle": 0,
+            "created_by": "system",
+            "created_at": "2026-01-27T21:07:05.834293+00:00",
+            "tags": [
+                "configuration",
+                "crystallization",
+                "tuning"
+            ],
+            "is_template": true,
+            "run_count": 0
+        }
+    ]
+}

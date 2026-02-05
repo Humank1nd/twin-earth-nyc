@@ -1,0 +1,44 @@
+{
+    "current_stanza": {
+        "value": "doorway",
+        "number": 1,
+        "question": "WHY?",
+        "verse": "At every doorway, before entering, look around and peer carefully; who knows what foes may sit in the hall ahead.",
+        "verse_number": "1",
+        "behavioral_anchor": "Peer carefully before entering",
+        "constraints": [
+            "Enumerate available resources and constraints before action",
+            "Validate all inputs - never trust unverified data",
+            "Identify potential failure modes (threat model)",
+            "Establish rollback path before proceeding"
+        ],
+        "rune": "\u00e1\u0161\u00a8",
+        "totem": "Raven",
+        "clan": "Gungnir",
+        "deity": "Odin",
+        "color_hex": "#8b0000"
+    },
+    "cycle_count": 0,
+    "stanza_count": 0,
+    "wound_metrics": {
+        "wisdom_wound": 0.0,
+        "fate_wound": 0.0,
+        "chaos_wound": 0.0,
+        "tide_wound": 0.0,
+        "place_wound": 0.0,
+        "watch_wound": 0.0,
+        "memory_wound": 0.0,
+        "network_wound": 0.0,
+        "storage_wound": 0.0,
+        "total_wound": 0.0,
+        "average_wound": 0.0,
+        "is_critical": false,
+        "ragnarok_imminent": false
+    },
+    "runes_carved": 0,
+    "runes_rejected": 0,
+    "carving_rate": 0.0,
+    "created_at": "2026-01-27T21:07:06.116658+00:00",
+    "updated_at": "2026-01-27T21:07:06.116659+00:00",
+    "history_count": 0
+}

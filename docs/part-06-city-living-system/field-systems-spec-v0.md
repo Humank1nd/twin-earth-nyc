@@ -359,12 +359,12 @@ This field is purely derived from NPC positions. There are no independent source
 
 ### 8.2 Channel Definitions
 
-| Channel | Index | Meaning | Typical Sources | Threshold Effects |
-|---------|-------|---------|-----------------|-------------------|
-| **Physical** | 0 | Danger to life/property: fire, collapse, explosion, traffic accident | Damage events, fire events, structural events | > 0.3: emergency response dispatched. > 0.7: evacuation behavior triggered. |
-| **Social** | 1 | Public attention / unrest: protests, street performances, fights, anomaly rubbernecking | Crowd gathering events, altercation events, anomaly visibility | > 0.3: media coverage probability rises. > 0.7: faction leaders take notice. |
-| **Institutional** | 2 | Authority pressure / surveillance intensity: police presence, CCTV coverage, regulatory action | Authority NPC patrol reports, CCTV evidence committed, citations issued | > 0.3: increased patrol frequency. > 0.7: lockdown protocol possibility. |
-| **Ecological** | 3 | Environmental disruption: pollution, noise damage, infrastructure stress, anomaly contamination | Pollution events, sustained noise > 90 dB, infrastructure damage, anomaly residue | > 0.3: city-services dispatch. > 0.7: area closure for remediation. |
+| Channel | Index | Meaning | Typical Sources | Threshold Effects | Diegetic Idea |
+|---------|-------|---------|-----------------|-------------------|---------------|
+| **Physical** | 0 | Danger to life/property: fire, collapse, explosion, traffic accident | Damage events, fire events, structural events | > 0.3: emergency response dispatched. > 0.7: evacuation behavior triggered. | **Hulk Smash index** (structural stress) |
+| **Social** | 1 | Public attention / unrest: protests, street performances, fights, anomaly rubbernecking | Crowd gathering events, altercation events, anomaly visibility | > 0.3: media coverage probability rises. > 0.7: faction leaders take notice. | **Daily Bugle trending** (viral potential) |
+| **Institutional** | 2 | Authority pressure / surveillance intensity: police presence, CCTV coverage, regulatory action | Authority NPC patrol reports, CCTV evidence committed, citations issued | > 0.3: increased patrol frequency. > 0.7: lockdown protocol possibility. | **SHIELD alert level** (authority focus) |
+| **Ecological** | 3 | Environmental disruption: pollution, noise damage, infrastructure stress, anomaly contamination | Pollution events, sustained noise > 90 dB, infrastructure damage, anomaly residue | > 0.3: city-services dispatch. > 0.7: area closure for remediation. | **Muspelheim fire** (energy diffusion cap) |
 
 ### 8.3 Source Terms
 
@@ -522,4 +522,20 @@ No field effect propagates instantaneously across the entire slice. All field pr
 
 ---
 
-*End of document. For entity hierarchy definitions, see `ontology-spec-v0.md`. For escalation and hierarchy coupling rules, see `hierarchy-coupling-rules-v0.md`. For material-level field responses, see `materials-consequences-spec-v0.md`.*
+## 11. Diegetic Field Integration (MCU Analogies)
+
+To ground simulation parameters in the project's "Marvel as fiction" thesis, field interactions are tagged with MCU analogies. These serve as inspirational code for pocket universe expansions (e.g., Realms packs) while remaining strictly physical in the Earth-1218 hub.
+
+| Field Interaction | Physical Mechanism | MCU Analogy (Diegetic Tag) |
+|-------------------|--------------------|----------------------------|
+| **Wind → Visibility** | Particulate obscuration reduces view distance | **Jotunheim Cooling** (Frost giant blizzard reduces visibility) |
+| **Heat → Diffusion** | High energy accelerates field propagation | **Muspelheim Fire** (Eternal flame spreads rapidly) |
+| **Noise → Stress** | Sustained decibels increase agent anxiety | **Hulk Pulse** (Gamma radiation spike induces stress) |
+| **Light → Perception** | Low lux reduces detection confidence | **Dark Dimension** (Absence of light hides threats) |
+| **Information → Rumor** | Misinformation propagation through crowd | **Loki Deception** (Illusion diffusion vector) |
+| **Cognition → Confidence** | Rumor exposure reduces decision threshold | **Loki Deception** (Rumor totem affecting WHY stanza) |
+| **Memory → IoT** | Sensor reliability acts as recall filter | **Heimdall Sight** (IDS for sensor-limited memory) |
+| **Energy → Emergence** | Population energy exceeds threshold | **The Emergence** (High-Heat seismic spike) |
+
+---
+*End of Document*

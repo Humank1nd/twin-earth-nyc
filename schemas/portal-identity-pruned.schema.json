@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twin-earth-nyc.game/schemas/portal-identity-pruned.schema.json",
+  "title": "Portal Identity Pruned Payload",
+  "description": "Payload schema for portal.identity.pruned messages emitted by the identity gate.",
+  "type": "object",
+  "required": ["canonical_id", "pruned_instances", "raw_score", "reason"],
+  "properties": {
+    "canonical_id": {
+      "type": "string",
+      "description": "Canonical identity for the pruned overlap."
+    },
+    "pruned_instances": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1,
+      "description": "Instance IDs that were pruned or extracted."
+    },
+    "raw_score": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Raw overlap score before decay."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Reason for pruning (e.g., overlap_threshold)."
+    },
+    "mixed_transit": {
+      "type": "boolean",
+      "description": "True if the prune occurred during a mixed-transit event."
+    }
+  },
+  "additionalProperties": false
+}

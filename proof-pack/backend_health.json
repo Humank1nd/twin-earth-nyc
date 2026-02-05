@@ -1,0 +1,32 @@
+{
+    "hub_status": "healthy",
+    "services_online": "4/4",
+    "services": {
+        "llm": {
+            "name": "LLM Router",
+            "status": "online",
+            "latency_ms": 45.2,
+            "url": "http://localhost:8000/llm"
+        },
+        "agents": {
+            "name": "SLEIPNIR Agents",
+            "status": "online",
+            "latency_ms": 12.5,
+            "url": "http://localhost:8000/agents"
+        },
+        "lattice": {
+            "name": "Lattice Geometry",
+            "status": "online",
+            "latency_ms": 8.1,
+            "url": "http://localhost:8000/lattice"
+        },
+        "knowledge": {
+            "name": "Knowledge RAG",
+            "status": "online",
+            "latency_ms": 23.7,
+            "url": "http://localhost:8000/knowledge"
+        }
+    },
+    "timestamp": "2026-01-27T21:07:10.381611+00:00",
+    "service": "AXE"
+}
