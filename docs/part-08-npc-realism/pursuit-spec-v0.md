@@ -39,3 +39,16 @@ Pursuit logic utilizes the `NavigationService` to enforce `NAV_PATH_VALID` const
 
 ---
 *End of Document*
+
+## Worked Example (Interception)
+
+Target flees north on Broadway at 5 m/s; pursuer at 6.5 m/s two blocks
+south. Re-solve at 2.0s cadence predicts the target's Canal St crossing
+three ticks out; interception plots to the crossing, not the current
+position. Catch in under 90 seconds or the trail goes cold per Phase 37.
+
+## Audit Checklist
+
+- [ ] Re-solve cadence holds at 2.0s under crowd load.
+- [ ] Interception targets predicted position, never current.
+- [ ] NAV_PATH_VALID enforced on every re-solve.

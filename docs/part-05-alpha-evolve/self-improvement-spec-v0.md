@@ -46,3 +46,9 @@ Hyperparameters are subjected to sensor-limited noise from IoT artifacts (Part 7
 
 ---
 *End of Document*
+
+## Worked Example (Tamper Response)
+
+IDS flags a 0.3 anomaly on the Meta-Audit channel: reduction engages,
+affected slice quarantines for review, and the event lands in the fitness
+ledger before the next evolve cycle runs.

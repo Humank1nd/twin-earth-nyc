@@ -43,3 +43,9 @@ Celestial artifacts (e.g., Eternal technology) are decayed by the **Bifrost Band
 
 ---
 *End of Document*
+
+## Worked Example (Uni-Mind in Hub)
+
+Three Eternals pool minds in the Hub: 70% pooling loss leaves an effective
+1.4 minds of coordination — enough for shared senses, short of hive tactics.
+Verdict: permitted as spectacle, barred from combat doctrine.

@@ -38,3 +38,15 @@ When a level shift occurs, the **Response Manager** (Part 11.6) triggers one-tim
 
 ---
 *End of Document*
+## Worked Example (Lockdown)
+
+Heat hits CRISIS at the Bowery shelter node: Response Manager fires once,
+all local portals go QUARANTINED, hero-level response escalates per the
+Avengers Initiative tag. Stand-down requires all-clear from two seats —
+single-source stand-down is rejected by design.
+
+## Audit Checklist
+
+- [ ] Lockdown fired exactly once per transition.
+- [ ] All portals confirmed QUARANTINED before escalation.
+- [ ] Stand-down carries two-seat authorization.

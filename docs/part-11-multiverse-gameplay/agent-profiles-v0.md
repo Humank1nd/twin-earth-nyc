@@ -45,5 +45,13 @@ Agents utilize a two-tier memory system:
 | **memory_decay_rate** | `M-02` | 0.1 - 2.0 | Speed at which un-reinforced memories fade |
 | **anomaly_attention_weight** | `M-03` | 0.0 - 1.0 | Likelihood to prioritize Anomaly field data |
 
+## 5. Worked Example (Memory Pressure)
+
+An agent holds 15 slots (M-01 max) with decay 2.0 and anomaly weight 1.0
+during a Convergence event: un-reinforced memories fade within the hour
+while anomaly field data crowds out routine observations. The profile
+recommends dropping decay to 0.5 post-event so baseline memory rebuilds
+before the next slice.
+
 ---
 *End of Document*

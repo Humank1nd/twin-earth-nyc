@@ -41,6 +41,15 @@ Agents must adhere to the following invariants to maintain hub sacredness:
 Agent profiles serve as “Asgardian registries”: identifying potential realm‑alignment
 stress (Convergence) before it triggers a simulation‑wide REBOOT.
 
+## 5. Worked Example (Variant Overlap)
+
+Two Loki variants register sim-side with overlap Sim 0.94 — above the 0.9
+Identity Integrity cap. The registry flags both, exfil halves for each until
+overlap decays under cap or one variant exits the slice. No REBOOT, no drama:
+arithmetic first, Convergence never triggered.
+
+Registry rule of thumb: when in doubt, halve exfil and re-measure.
+
 ---
 
 *End of document.*

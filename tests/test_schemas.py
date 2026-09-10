@@ -13,6 +13,8 @@ class TestSchemaFiles:
         "observation.schema.json",
         "operation.schema.json",
         "portal.schema.json",
+        "portal-identity-pruned.schema.json",
+        "alphaevolve-fitness-ledger.schema.json",
         "proposal.schema.json",
         "universe-profile.schema.json",
         "world-state-node.schema.json",
@@ -30,7 +32,7 @@ class TestSchemaFiles:
         assert not extra, f"Unexpected schemas: {extra}"
 
     def test_count(self, schema_dir):
-        assert len(list(schema_dir.glob("*.schema.json"))) == 12
+        assert len(list(schema_dir.glob("*.schema.json"))) == 14
 
 
 class TestSchemaValidity:

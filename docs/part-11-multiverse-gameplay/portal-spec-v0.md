@@ -40,5 +40,19 @@ AlphaEvolve optimizes the `threshold` parameter to ensure portal activity does n
 - **Stability Delta:** Change in local field values must remain $< 0.08$ per tick.
 - **Strain Threshold:** If local Institutional Heat exceeds 0.7, the portal enters **CLOSING** state automatically.
 
+## 5. Worked Example (Decay Audit)
+
+Artifact: Mjolnir-class strike, origin 616, rated $Power_{Origin} = 1000$.
+Route 616 -> Pocket -> 1218 is 2 hops: $Power_{Hub} = 1000 \times 0.7^2 = 490$.
+Verdict: survives the gate at less than half strength — permitted, logged,
+and strain-assessed before traversal closes.
+
+## 6. Gate Audit Checklist
+
+- [ ] Origin universe and hop count recorded.
+- [ ] Decay math applied; Hub-side power computed.
+- [ ] Strain delta projected below 0.08 per tick.
+- [ ] QUARANTINE path armed for breach signatures.
+
 ---
 *End of Document*

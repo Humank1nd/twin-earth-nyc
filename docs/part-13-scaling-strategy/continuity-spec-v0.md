@@ -31,3 +31,20 @@ As the simulation scales to Ring 2 (Harlem/UWS), the Manhattan Core is divided i
 
 ---
 *End of Document*
+
+## 5. Worked Example (Slice Handoff)
+
+Slice 7 (Midtown) hands a hot pursuit to Slice 8 (Harlem) at the 110th St
+boundary: anomaly weights carry over intact, Yggdrasil root confirms both
+slices share INV-C4803 state, and the handoff completes without resetting
+attention. A cold handoff (weights dropped) would read as a continuity
+break in audit — same rule as Quilt Tower's cross-slice canon checks.
+
+## 6. Audit Checklist
+
+- [ ] Anomaly weights preserved across every boundary crossed.
+- [ ] INV-C4803 holds: no resets at slice edges.
+- [ ] Yggdrasil root acknowledges both slices before handoff closes.
+
+Continuity is the absence of surprises across boundaries. When in doubt,
+carry state forward and log the carry.

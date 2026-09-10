@@ -38,3 +38,16 @@ Ring 2 introduces the first non-linear street topology at **Columbus Circle**.
 
 ---
 *End of Document*
+
+## Radial Worked Example
+
+A delivery van enters the 125th St roundabout at 30 km/h behind a bus:
+yield holds it at the rim, tangent velocity carries it one quarter turn,
+and the Kimoyo Mesh stitches it back onto the grid spline without a full
+stop. Rush-hour test: 40 vehicles circulating, zero gridlock minutes.
+
+## Audit Checklist
+
+- [ ] Entry priority respected under load.
+- [ ] No full stops in circulating flow.
+- [ ] Spline stitch continuous at grid re-entry.
